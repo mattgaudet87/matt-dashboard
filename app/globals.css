@@ -1,17 +1,84 @@
 @import "tailwindcss";
 
+/* ── Dark Redesign 2026 design tokens ─────────────────────────────
+   Palette + semantics from the redesign mockup. Use the `accent`,
+   `surface`, etc. utilities (bg-surface, text-accent, border-line…). */
 @theme inline {
-  /* Brand accent (BUILD_PLAN design rules). */
-  --color-accent: #1a56a0;
-  --color-accent-dark: #154783;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+
+  --color-bg: #0a0c12;
+  --color-surface: #12141c;
+  --color-surface-2: #181b26;
+  --color-line: #1c1f2e;
+  --color-line-2: #252840;
+
+  --color-ink: #eff1f9; /* primary text */
+  --color-muted: #7a80a0; /* secondary text */
+  --color-dim: #4a5070; /* tertiary / disabled */
+
+  --color-accent: #7b61ff; /* XP / primary */
+  --color-accent-2: #a78bfa; /* gradient partner */
+  --color-gold: #f5c842; /* rewards */
+  --color-fire: #ff6b35; /* streak */
+  --color-emerald: #2dd4a0; /* done / good */
+  --color-emerald-2: #5bead4;
+  --color-coral: #ff5254; /* overdue */
+  --color-sky: #5bb8ff; /* health */
 }
 
 html {
-  background: #f1f5f9; /* slate-100 */
+  background: var(--color-bg);
 }
 
 body {
-  color: #0f172a; /* slate-900 */
+  color: var(--color-ink);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Animations ──────────────────────────────────────────────── */
+
+/* Persistent XP bar glow */
+@keyframes xpGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(123, 97, 255, 0.65);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(123, 97, 255, 0.9);
+  }
+}
+.animate-xp-glow {
+  animation: xpGlow 2.4s ease-in-out infinite;
+}
+
+/* Screen mount transition — apply to each screen's root element */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-screen {
+  animation: slideIn 280ms ease both;
+}
+
+/* Habit circle completion pop */
+@keyframes habitPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-habit-pop {
+  animation: habitPop 300ms ease;
 }

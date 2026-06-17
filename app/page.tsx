@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useDashboard } from "./providers";
 import DotGrid from "./components/DotGrid";
+import {
+  Badge,
+  Card,
+  CategoryTag,
+  HabitCircle,
+  SectionHeader,
+  StatCard,
+  categoryColor,
+} from "./components/ui";
 import { formatMoney, relativeDays } from "@/lib/format";
 import type {
   TodayChore,
@@ -37,12 +45,12 @@ export default function TodayPage() {
   }
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-slate-400">Loading your day…</p>;
+    return <p className="py-12 text-center text-muted">Loading your day…</p>;
   }
   if (error && !data) {
     return (
       <div className="py-12 text-center">
-        <p className="text-slate-500">Couldn’t load your dashboard.</p>
+        <p className="text-muted">Couldn’t load your dashboard.</p>
         <button
           onClick={refresh}
           className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
@@ -58,22 +66,22 @@ export default function TodayPage() {
   const overBudget = stats.budget.remaining < 0;
 
   return (
-    <div className="space-y-5">
+    <div className="animate-screen space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-[26px] font-bold leading-tight">
           Good {greeting.timeOfDay}, {greeting.name.split(" ")[0]}.
         </h1>
-        <p className="text-sm text-slate-500">Here’s your day at a glance.</p>
+        <p className="mt-0.5 text-sm text-muted">Here’s your day at a glance.</p>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Health Score" value={`${stats.healthScore}`} sub="of 100 this week" />
+      <div className="grid grid-cols-2 gap-2.5">
+        <StatCard label="Health Score" value={`${stats.healthScore}`} sub="of 100 this week" tone="sky" />
         <StatCard
           label="Budget Left"
           value={formatMoney(stats.budget.remaining)}
           sub="this month"
-          tone={overBudget ? "red" : "default"}
+          tone={overBudget ? "coral" : "emerald"}
         />
         <StatCard
           label="Tasks Done"
@@ -84,16 +92,17 @@ export default function TodayPage() {
           label="Check-Ins Due"
           value={`${stats.relationshipsOverdue}`}
           sub="people overdue"
-          tone={stats.relationshipsOverdue > 0 ? "red" : "default"}
+          tone={stats.relationshipsOverdue > 0 ? "coral" : "default"}
         />
       </div>
 
       {/* Habits */}
-      <Section title="Habits">
+      <section>
+        <SectionHeader title="Today’s Habits" />
         {habits.length === 0 ? (
-          <Empty>No habits yet. Add some on the Habits tab.</Empty>
+          <Empty>No habits yet. Add some on the Grow tab.</Empty>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <div className="space-y-2">
             {habits.map((h) => (
               <HabitRow
                 key={h.id}
@@ -103,29 +112,31 @@ export default function TodayPage() {
                 onUndo={() => act(`habit:${h.id}`, `/api/habits/${h.id}/log`, "DELETE")}
               />
             ))}
-          </ul>
+          </div>
         )}
-      </Section>
+      </section>
 
       {/* Tasks */}
-      <Section title="Today’s Tasks" href="/tasks">
+      <section>
+        <SectionHeader title="Today’s Tasks" href="/tasks" />
         {tasks.length === 0 ? (
           <Empty>Nothing due today. 🎉</Empty>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <div className="space-y-2">
             {tasks.map((t) => (
               <TaskRow key={t.id} task={t} today={data.today} />
             ))}
-          </ul>
+          </div>
         )}
-      </Section>
+      </section>
 
       {/* Chores */}
-      <Section title="Chores Due" href="/chores">
+      <section>
+        <SectionHeader title="Chores Due" href="/chores" />
         {chores.length === 0 ? (
           <Empty>No chores due today. 🎉</Empty>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <div className="space-y-2">
             {chores.map((c) => (
               <ChoreRow
                 key={c.id}
@@ -134,76 +145,35 @@ export default function TodayPage() {
                 onComplete={() => act(`chore:${c.id}`, `/api/chores/${c.id}/done`, "PATCH")}
               />
             ))}
-          </ul>
+          </div>
         )}
-      </Section>
+      </section>
 
       {/* Upcoming dates */}
-      <Section title="Upcoming Dates" href="/dates">
+      <section>
+        <SectionHeader title="Upcoming Dates" href="/dates" />
         {upcomingDates.length === 0 ? (
           <Empty>No dates coming up.</Empty>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <Card padded={false} className="divide-y divide-line">
             {upcomingDates.map((d) => (
               <DateRow key={d.id} date={d} />
             ))}
-          </ul>
+          </Card>
         )}
-      </Section>
+      </section>
     </div>
   );
 }
 
 // --- presentational pieces -------------------------------------------------
 
-function StatCard({
-  label,
-  value,
-  sub,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  tone?: "default" | "red";
-}) {
-  return (
-    <div className="rounded-xl bg-white p-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className={`mt-1 text-xl font-bold ${tone === "red" ? "text-red-600" : "text-slate-900"}`}>
-        {value}
-      </p>
-      <p className="text-xs text-slate-400">{sub}</p>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  href,
-  children,
-}: {
-  title: string;
-  href?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <div className="mb-2 flex items-center justify-between px-1">
-        <h2 className="text-sm font-semibold text-slate-500">{title}</h2>
-        {href && (
-          <Link href={href} className="text-xs font-medium text-accent">
-            View all →
-          </Link>
-        )}
-      </div>
-      <div className="rounded-xl bg-white p-1">{children}</div>
-    </section>
-  );
-}
-
 function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="px-3 py-4 text-center text-sm text-slate-400">{children}</p>;
+  return (
+    <Card>
+      <p className="text-center text-sm text-muted">{children}</p>
+    </Card>
+  );
 }
 
 function HabitRow({
@@ -219,56 +189,39 @@ function HabitRow({
 }) {
   const done = habit.completedToday;
   return (
-    <li className="flex items-center gap-3 px-2 py-2">
-      <button
+    <Card className="flex items-center gap-3 !py-3">
+      <HabitCircle
+        done={done}
+        pending={pending}
         onClick={done ? onUndo : onComplete}
-        disabled={pending}
-        aria-label={done ? `Undo ${habit.name}` : `Complete ${habit.name}`}
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-lg ${
-          done
-            ? "border-accent bg-accent text-white"
-            : "border-slate-300 text-transparent active:bg-slate-50"
-        } disabled:opacity-60`}
-      >
-        ✓
-      </button>
+        label={done ? `Undo ${habit.name}` : `Complete ${habit.name}`}
+      />
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm font-medium ${done ? "text-slate-400 line-through" : ""}`}>
+        <p className={`truncate text-[13px] font-medium ${done ? "text-dim line-through" : "text-ink"}`}>
           {habit.name}
         </p>
-        <div className="mt-1">
-          <DotGrid week={habit.week} />
+        <div className="mt-1.5 flex items-center gap-2">
+          <CategoryTag category={habit.category} />
+          <DotGrid week={habit.week} color={categoryColor(habit.category)} />
         </div>
       </div>
-      {done && (
-        <button
-          onClick={onUndo}
-          disabled={pending}
-          className="shrink-0 rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-500 active:bg-slate-50 disabled:opacity-60"
-        >
-          Undo
-        </button>
-      )}
-    </li>
+      {!done && <Badge tone="xp">+10</Badge>}
+    </Card>
   );
 }
 
 function TaskRow({ task, today }: { task: TodayTask; today: string }) {
   const overdue = task.dueDate !== null && task.dueDate < today;
   return (
-    <li className="flex items-center gap-2 px-3 py-2.5">
-      {task.priority === "high" && (
-        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
-          High
-        </span>
-      )}
-      <span className="flex-1 truncate text-sm">{task.title}</span>
+    <Card className="flex items-center gap-2.5 !py-3">
+      {task.priority === "high" && <Badge tone="high">High</Badge>}
+      <span className="flex-1 truncate text-[13px] text-ink">{task.title}</span>
       {task.dueDate && (
-        <span className={`text-xs ${overdue ? "text-red-600" : "text-slate-400"}`}>
+        <span className={`text-xs font-medium ${overdue ? "text-coral" : "text-dim"}`}>
           {overdue ? "overdue" : "due today"}
         </span>
       )}
-    </li>
+    </Card>
   );
 }
 
@@ -282,38 +235,32 @@ function ChoreRow({
   onComplete: () => void;
 }) {
   return (
-    <li className="flex items-center gap-3 px-2 py-2">
-      <button
+    <Card className="flex items-center gap-3 !py-3">
+      <HabitCircle
+        done={false}
+        pending={pending}
         onClick={onComplete}
-        disabled={pending}
-        aria-label={`Mark ${chore.name} done`}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 text-lg text-transparent active:bg-slate-50 disabled:opacity-60"
-      >
-        ✓
-      </button>
-      <span className="flex-1 truncate text-sm font-medium">{chore.name}</span>
-      {chore.overdue && (
-        <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-red-700">
-          Overdue
-        </span>
-      )}
-    </li>
+        label={`Mark ${chore.name} done`}
+      />
+      <span className="flex-1 truncate text-[13px] font-medium text-ink">{chore.name}</span>
+      {chore.overdue && <Badge tone="overdue">Overdue</Badge>}
+    </Card>
   );
 }
 
 const DATE_TONE: Record<TodayDate["urgency"], string> = {
-  urgent: "text-red-600",
-  soon: "text-amber-600",
-  normal: "text-slate-400",
+  urgent: "text-coral",
+  soon: "text-gold",
+  normal: "text-dim",
 };
 
 function DateRow({ date }: { date: TodayDate }) {
   return (
-    <li className="flex items-center gap-2 px-3 py-2.5">
-      <span className="flex-1 truncate text-sm">{date.title}</span>
+    <div className="flex items-center gap-2 px-4 py-3">
+      <span className="flex-1 truncate text-[13px] text-ink">{date.title}</span>
       <span className={`text-xs font-medium ${DATE_TONE[date.urgency]}`}>
         {relativeDays(date.daysUntil)}
       </span>
-    </li>
+    </div>
   );
 }

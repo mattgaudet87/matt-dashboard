@@ -22,9 +22,9 @@ const FREQUENCIES = [
 ] as const;
 
 const URGENCY_TONE: Record<RelationshipUrgency, string> = {
-  overdue: "bg-red-100 text-red-700",
-  soon: "bg-amber-100 text-amber-700",
-  good: "bg-emerald-100 text-emerald-700",
+  overdue: "bg-coral/15 text-coral",
+  soon: "bg-gold/15 text-gold",
+  good: "bg-emerald/15 text-emerald",
 };
 
 const URGENCY_LABEL: Record<RelationshipUrgency, string> = {
@@ -88,12 +88,12 @@ export default function PeoplePage() {
   }
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-slate-400">Loading people…</p>;
+    return <p className="py-12 text-center text-dim">Loading people…</p>;
   }
   if (error && !data) {
     return (
       <div className="py-12 text-center">
-        <p className="text-slate-500">Couldn’t load your people.</p>
+        <p className="text-muted">Couldn’t load your people.</p>
         <button
           onClick={load}
           className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
@@ -108,11 +108,11 @@ export default function PeoplePage() {
   const overdueCount = data.people.filter((p) => p.urgency === "overdue").length;
 
   return (
-    <div className="space-y-5">
+    <div className="animate-screen space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Relationships</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-[22px] font-bold">Relationships</h1>
+          <p className="text-sm text-muted">
             {overdueCount > 0
               ? `${overdueCount} overdue · log a contact for +15 XP`
               : "Log a contact · +15 XP each"}
@@ -136,7 +136,7 @@ export default function PeoplePage() {
       )}
 
       {data.people.length === 0 ? (
-        <p className="rounded-xl bg-white px-3 py-8 text-center text-sm text-slate-400">
+        <p className="rounded-[18px] border border-line bg-surface px-3 py-8 text-center text-sm text-dim">
           No one tracked yet. Add the people who matter most.
         </p>
       ) : (
@@ -197,7 +197,7 @@ function PersonCard({
 
   if (editing) {
     return (
-      <li className="rounded-xl bg-white p-1">
+      <li className="rounded-[18px] border border-line bg-surface p-1">
         <PersonDetailForm
           person={person}
           onSaved={() => {
@@ -211,7 +211,12 @@ function PersonCard({
   }
 
   return (
-    <li className="rounded-xl bg-white p-3">
+    <li
+      className="rounded-[18px] border bg-surface p-3"
+      style={{
+        borderColor: person.urgency === "overdue" ? "rgba(255,82,84,.22)" : "#1c1f2e",
+      }}
+    >
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -222,7 +227,7 @@ function PersonCard({
               {URGENCY_LABEL[person.urgency]}
             </span>
           </div>
-          <p className="mt-0.5 text-xs capitalize text-slate-400">
+          <p className="mt-0.5 text-xs capitalize text-dim">
             {person.relationshipType} · {lastContactLabel(person)}
           </p>
         </div>
@@ -236,34 +241,34 @@ function PersonCard({
         <button
           onClick={onArchive}
           disabled={pending}
-          className="shrink-0 px-1 py-2 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
+          className="shrink-0 px-1 py-2 text-xs font-medium text-dim active:text-muted disabled:opacity-60"
         >
           Archive
         </button>
       </div>
 
       {person.notes && (
-        <p className="mt-2 text-xs text-slate-500">{person.notes}</p>
+        <p className="mt-2 text-xs text-muted">{person.notes}</p>
       )}
 
       {(person.whenMet || person.howMet || person.sharedInterests) && (
-        <dl className="mt-2 space-y-1 border-t border-slate-100 pt-2 text-xs">
+        <dl className="mt-2 space-y-1 border-t border-line pt-2 text-xs">
           {person.whenMet && (
             <div className="flex gap-2">
-              <dt className="shrink-0 font-medium text-slate-400">When met</dt>
-              <dd className="text-slate-600">{person.whenMet}</dd>
+              <dt className="shrink-0 font-medium text-dim">When met</dt>
+              <dd className="text-muted">{person.whenMet}</dd>
             </div>
           )}
           {person.howMet && (
             <div className="flex gap-2">
-              <dt className="shrink-0 font-medium text-slate-400">How met</dt>
-              <dd className="text-slate-600">{person.howMet}</dd>
+              <dt className="shrink-0 font-medium text-dim">How met</dt>
+              <dd className="text-muted">{person.howMet}</dd>
             </div>
           )}
           {person.sharedInterests && (
             <div className="flex gap-2">
-              <dt className="shrink-0 font-medium text-slate-400">Shared</dt>
-              <dd className="text-slate-600">{person.sharedInterests}</dd>
+              <dt className="shrink-0 font-medium text-dim">Shared</dt>
+              <dd className="text-muted">{person.sharedInterests}</dd>
             </div>
           )}
         </dl>
@@ -275,7 +280,11 @@ function PersonCard({
         ) : (
           <button
             onClick={onToggleLog}
-            className="w-full rounded-lg bg-accent/10 py-2 text-sm font-semibold text-accent active:bg-accent/20"
+            className={`w-full rounded-lg py-2 text-sm font-semibold ${
+              person.urgency === "overdue"
+                ? "bg-coral/15 text-coral active:bg-coral/25"
+                : "bg-accent/10 text-accent active:bg-accent/20"
+            }`}
           >
             Log contact · +15 XP
           </button>
@@ -284,7 +293,7 @@ function PersonCard({
 
       <button
         onClick={() => setShowHistory((s) => !s)}
-        className="mt-2 flex min-h-[44px] w-full items-center justify-center text-xs font-medium text-slate-400 active:text-slate-600"
+        className="mt-2 flex min-h-[44px] w-full items-center justify-center text-xs font-medium text-dim active:text-muted"
       >
         {showHistory ? "Hide history ▲" : "Contact history ▼"}
       </button>
@@ -332,8 +341,8 @@ function ContactHistory({
 
   if (error) {
     return (
-      <div className="mt-2 rounded-lg bg-slate-50 p-3 text-center">
-        <p className="text-xs text-red-600">{error}</p>
+      <div className="mt-2 rounded-lg bg-surface-2 p-3 text-center">
+        <p className="text-xs text-coral">{error}</p>
         <button onClick={load} className="mt-2 text-xs font-medium text-accent">
           Try again
         </button>
@@ -341,11 +350,11 @@ function ContactHistory({
     );
   }
   if (logs === null) {
-    return <p className="mt-2 py-3 text-center text-xs text-slate-400">Loading history…</p>;
+    return <p className="mt-2 py-3 text-center text-xs text-dim">Loading history…</p>;
   }
   if (logs.length === 0) {
     return (
-      <p className="mt-2 rounded-lg bg-slate-50 py-4 text-center text-xs text-slate-400">
+      <p className="mt-2 rounded-lg bg-surface-2 py-4 text-center text-xs text-dim">
         No contacts logged yet.
       </p>
     );
@@ -428,23 +437,23 @@ function ContactLogItem({
   if (editing) {
     return (
       <li>
-        <form onSubmit={save} className="space-y-2 rounded-lg bg-slate-50 p-3">
+        <form onSubmit={save} className="space-y-2 rounded-lg bg-surface-2 p-3">
           <div className="flex gap-2">
             <input
               type="date"
               value={date}
               max={todayIso()}
               onChange={(e) => setDate(e.target.value)}
-              className="rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-accent"
+              className="rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-2 py-2 text-sm outline-none focus:border-accent"
             />
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Note (optional)"
-              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-accent"
+              className="min-w-0 flex-1 rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
-          {err && <p className="text-xs text-red-600">{err}</p>}
+          {err && <p className="text-xs text-coral">{err}</p>}
           <div className="flex gap-2">
             <button
               type="submit"
@@ -456,7 +465,7 @@ function ContactLogItem({
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-500"
+              className="rounded-lg bg-surface-2 px-3 py-2 text-sm font-medium text-muted"
             >
               Cancel
             </button>
@@ -467,11 +476,11 @@ function ContactLogItem({
   }
 
   return (
-    <li className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+    <li className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2">
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-slate-600">{log.contactDate}</p>
-        {log.note && <p className="truncate text-xs text-slate-500">{log.note}</p>}
-        {err && <p className="text-xs text-red-600">{err}</p>}
+        <p className="text-xs font-medium text-muted">{log.contactDate}</p>
+        {log.note && <p className="truncate text-xs text-muted">{log.note}</p>}
+        {err && <p className="text-xs text-coral">{err}</p>}
       </div>
       <button
         onClick={() => setEditing(true)}
@@ -483,7 +492,7 @@ function ContactLogItem({
       <button
         onClick={remove}
         disabled={busy}
-        className="shrink-0 px-2 py-2 text-xs font-medium text-red-500 disabled:opacity-60"
+        className="shrink-0 px-2 py-2 text-xs font-medium text-coral disabled:opacity-60"
       >
         Delete
       </button>
@@ -530,24 +539,24 @@ function LogContactForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2 rounded-lg bg-slate-50 p-3">
+    <form onSubmit={submit} className="space-y-2 rounded-lg bg-surface-2 p-3">
       <div className="flex gap-2">
         <input
           type="date"
           value={date}
           max={todayIso()}
           onChange={(e) => setDate(e.target.value)}
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-accent"
+          className="rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-2 py-2 text-sm outline-none focus:border-accent"
         />
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Note (optional)"
-          className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-accent"
+          className="min-w-0 flex-1 rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2 text-sm outline-none focus:border-accent"
           autoFocus
         />
       </div>
-      {err && <p className="text-xs text-red-600">{err}</p>}
+      {err && <p className="text-xs text-coral">{err}</p>}
       <div className="flex gap-2">
         <button
           type="submit"
@@ -559,7 +568,7 @@ function LogContactForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-500"
+          className="rounded-lg bg-surface-2 px-3 py-2 text-sm font-medium text-muted"
         >
           Cancel
         </button>
@@ -628,20 +637,20 @@ function PersonDetailForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl bg-white p-4">
-      <p className="text-sm font-semibold text-slate-700">Relationship details</p>
+    <form onSubmit={submit} className="space-y-3 rounded-[18px] border border-line bg-surface p-4">
+      <p className="text-sm font-semibold text-ink">Relationship details</p>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-500">Name</span>
+        <span className="mb-1 block text-xs font-medium text-muted">Name</span>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         />
       </label>
 
       <div>
-        <p className="mb-1 text-xs font-medium text-slate-500">Relationship</p>
+        <p className="mb-1 text-xs font-medium text-muted">Relationship</p>
         <div className="flex flex-wrap gap-2">
           {RELATIONSHIP_TYPES.map((r) => (
             <button
@@ -649,7 +658,7 @@ function PersonDetailForm({
               type="button"
               onClick={() => setRelationshipType(r)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${
-                relationshipType === r ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+                relationshipType === r ? "bg-accent text-white" : "bg-surface-2 text-muted"
               }`}
             >
               {r}
@@ -659,7 +668,7 @@ function PersonDetailForm({
       </div>
 
       <div>
-        <p className="mb-1 text-xs font-medium text-slate-500">Check in</p>
+        <p className="mb-1 text-xs font-medium text-muted">Check in</p>
         <div className="flex flex-wrap gap-2">
           {FREQUENCIES.map((f) => (
             <button
@@ -667,7 +676,7 @@ function PersonDetailForm({
               type="button"
               onClick={() => setFrequency(f.days)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                frequency === f.days ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+                frequency === f.days ? "bg-accent text-white" : "bg-surface-2 text-muted"
               }`}
             >
               {f.label}
@@ -677,58 +686,58 @@ function PersonDetailForm({
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-500">Birthday</span>
+        <span className="mb-1 block text-xs font-medium text-muted">Birthday</span>
         <input
           type="date"
           value={birthday}
           onChange={(e) => setBirthday(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         />
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-500">Notes</span>
+        <span className="mb-1 block text-xs font-medium text-muted">Notes</span>
         <input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notes"
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         />
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-500">When met</span>
+        <span className="mb-1 block text-xs font-medium text-muted">When met</span>
         <input
           value={whenMet}
           onChange={(e) => setWhenMet(e.target.value)}
           placeholder="e.g. Summer 2019 at a Wolf Creative event"
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         />
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-500">How met</span>
+        <span className="mb-1 block text-xs font-medium text-muted">How met</span>
         <input
           value={howMet}
           onChange={(e) => setHowMet(e.target.value)}
           placeholder="e.g. Mutual friend introduced us"
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         />
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-500">
+        <span className="mb-1 block text-xs font-medium text-muted">
           Shared interests
         </span>
         <input
           value={sharedInterests}
           onChange={(e) => setSharedInterests(e.target.value)}
           placeholder="e.g. Hockey, content creation, travel"
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         />
       </label>
 
-      {err && <p className="text-xs text-red-600">{err}</p>}
+      {err && <p className="text-xs text-coral">{err}</p>}
 
       <div className="flex gap-2">
         <button
@@ -741,7 +750,7 @@ function PersonDetailForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-500"
+          className="rounded-lg bg-surface-2 px-4 py-2.5 text-sm font-medium text-muted"
         >
           Cancel
         </button>
@@ -792,17 +801,17 @@ function AddPersonForm({ onCreated }: { onCreated: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl bg-white p-4">
+    <form onSubmit={submit} className="space-y-3 rounded-[18px] border border-line bg-surface p-4">
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         autoFocus
       />
 
       <div>
-        <p className="mb-1 text-xs font-medium text-slate-500">Relationship</p>
+        <p className="mb-1 text-xs font-medium text-muted">Relationship</p>
         <div className="flex flex-wrap gap-2">
           {RELATIONSHIP_TYPES.map((r) => (
             <button
@@ -810,7 +819,7 @@ function AddPersonForm({ onCreated }: { onCreated: () => void }) {
               type="button"
               onClick={() => setRelationshipType(r)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${
-                relationshipType === r ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+                relationshipType === r ? "bg-accent text-white" : "bg-surface-2 text-muted"
               }`}
             >
               {r}
@@ -820,7 +829,7 @@ function AddPersonForm({ onCreated }: { onCreated: () => void }) {
       </div>
 
       <div>
-        <p className="mb-1 text-xs font-medium text-slate-500">Check in</p>
+        <p className="mb-1 text-xs font-medium text-muted">Check in</p>
         <div className="flex flex-wrap gap-2">
           {FREQUENCIES.map((f) => (
             <button
@@ -828,7 +837,7 @@ function AddPersonForm({ onCreated }: { onCreated: () => void }) {
               type="button"
               onClick={() => setFrequency(f.days)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                frequency === f.days ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+                frequency === f.days ? "bg-accent text-white" : "bg-surface-2 text-muted"
               }`}
             >
               {f.label}
@@ -838,14 +847,14 @@ function AddPersonForm({ onCreated }: { onCreated: () => void }) {
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-500">
+        <span className="mb-1 block text-xs font-medium text-muted">
           Birthday (optional — adds a recurring date)
         </span>
         <input
           type="date"
           value={birthday}
           onChange={(e) => setBirthday(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         />
       </label>
 
@@ -853,10 +862,10 @@ function AddPersonForm({ onCreated }: { onCreated: () => void }) {
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes (optional)"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
       />
 
-      {err && <p className="text-xs text-red-600">{err}</p>}
+      {err && <p className="text-xs text-coral">{err}</p>}
 
       <button
         type="submit"

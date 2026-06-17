@@ -67,6 +67,17 @@ export default function ChoresPage() {
     }
   }
 
+  async function undo(c: ChoreRow) {
+    setPendingId(c.id, true);
+    try {
+      const res = await fetch(`/api/chores/${c.id}/done`, { method: "DELETE" });
+      // 404 = nothing logged to undo; treat as a no-op success.
+      if (res.ok || res.status === 404) await Promise.all([load(), refreshDashboard()]);
+    } finally {
+      setPendingId(c.id, false);
+    }
+  }
+
   async function archive(c: ChoreRow) {
     setPendingId(c.id, true);
     try {
@@ -82,12 +93,12 @@ export default function ChoresPage() {
   }
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-slate-400">Loading chores…</p>;
+    return <p className="py-12 text-center text-dim">Loading chores…</p>;
   }
   if (error && !data) {
     return (
       <div className="py-12 text-center">
-        <p className="text-slate-500">Couldn’t load your chores.</p>
+        <p className="text-muted">Couldn’t load your chores.</p>
         <button
           onClick={load}
           className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
@@ -100,11 +111,11 @@ export default function ChoresPage() {
   if (!data) return null;
 
   return (
-    <div className="space-y-5">
+    <div className="animate-screen space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Chores</h1>
-          <p className="text-sm text-slate-500">Mark done · +8 XP each</p>
+          <h1 className="text-[22px] font-bold">Chores</h1>
+          <p className="text-sm text-muted">Mark done · +8 XP each</p>
         </div>
         <button
           onClick={() => setShowForm((s) => !s)}
@@ -124,7 +135,7 @@ export default function ChoresPage() {
       )}
 
       {data.chores.length === 0 ? (
-        <p className="rounded-xl bg-white px-3 py-8 text-center text-sm text-slate-400">
+        <p className="rounded-[18px] border border-line bg-surface px-3 py-8 text-center text-sm text-dim">
           No chores yet. Add the recurring stuff you keep forgetting.
         </p>
       ) : (
@@ -135,6 +146,7 @@ export default function ChoresPage() {
               chore={c}
               pending={pending.has(c.id)}
               onDone={() => done(c)}
+              onUndo={() => undo(c)}
               onArchive={() => archive(c)}
               onSaved={load}
             />
@@ -151,12 +163,14 @@ function ChoreCard({
   chore,
   pending,
   onDone,
+  onUndo,
   onArchive,
   onSaved,
 }: {
   chore: ChoreRow;
   pending: boolean;
   onDone: () => void;
+  onUndo: () => void;
   onArchive: () => void;
   onSaved: () => Promise<void> | void;
 }) {
@@ -164,7 +178,7 @@ function ChoreCard({
 
   if (editing) {
     return (
-      <li className="rounded-xl bg-white p-1">
+      <li className="rounded-[18px] border border-line bg-surface p-1">
         <ChoreForm
           initial={chore}
           onSaved={async () => {
@@ -178,13 +192,13 @@ function ChoreCard({
   }
 
   return (
-    <li className="rounded-xl bg-white p-3">
+    <li className="rounded-[18px] border border-line bg-surface p-3">
       <div className="flex items-center gap-3">
         <button
           onClick={onDone}
           disabled={pending}
           aria-label={`Mark ${chore.name} done`}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 text-lg text-transparent active:bg-slate-50 disabled:opacity-60"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#3A3F58] text-lg text-transparent active:bg-surface-2 disabled:opacity-60"
         >
           ✓
         </button>
@@ -192,20 +206,28 @@ function ChoreCard({
           <div className="flex items-center gap-2">
             <p className="truncate font-medium">{chore.name}</p>
             {chore.overdue && (
-              <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-red-700">
+              <span className="rounded bg-coral/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-coral">
                 Overdue
               </span>
             )}
             {chore.dueToday && (
-              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+              <span className="rounded bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gold">
                 Due
               </span>
             )}
           </div>
-          <p className={`mt-0.5 text-xs ${chore.overdue ? "text-red-600" : "text-slate-400"}`}>
+          <p className={`mt-0.5 text-xs ${chore.overdue ? "text-coral" : "text-dim"}`}>
             {dueLabel(chore)} · every {chore.frequencyDays}d
           </p>
         </div>
+        <button
+          onClick={onUndo}
+          disabled={pending}
+          title="Undo the last completion"
+          className="shrink-0 px-2 py-2 text-xs font-medium text-muted disabled:opacity-60"
+        >
+          Undo
+        </button>
         <button
           onClick={() => setEditing(true)}
           disabled={pending}
@@ -216,12 +238,12 @@ function ChoreCard({
         <button
           onClick={onArchive}
           disabled={pending}
-          className="shrink-0 px-1 py-2 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
+          className="shrink-0 px-1 py-2 text-xs font-medium text-dim active:text-muted disabled:opacity-60"
         >
           Archive
         </button>
       </div>
-      {chore.notes && <p className="mt-2 pl-14 text-xs text-slate-500">{chore.notes}</p>}
+      {chore.notes && <p className="mt-2 pl-14 text-xs text-muted">{chore.notes}</p>}
     </li>
   );
 }
@@ -281,17 +303,17 @@ function ChoreForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl bg-white p-4">
+    <form onSubmit={submit} className="space-y-3 rounded-[18px] border border-line bg-surface p-4">
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Chore name (e.g. Take out trash)"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         autoFocus
       />
 
       <div>
-        <p className="mb-1 text-xs font-medium text-slate-500">Frequency</p>
+        <p className="mb-1 text-xs font-medium text-muted">Frequency</p>
         <div className="flex flex-wrap gap-2">
           {FREQUENCIES.map((f) => (
             <button
@@ -299,7 +321,7 @@ function ChoreForm({
               type="button"
               onClick={() => setFrequencyDays(f.days)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                frequencyDays === f.days ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+                frequencyDays === f.days ? "bg-accent text-white" : "bg-surface-2 text-muted"
               }`}
             >
               {f.label}
@@ -309,26 +331,26 @@ function ChoreForm({
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-500">
+        <span className="mb-1 block text-xs font-medium text-muted">
           {isEdit ? "Next due date" : "Start date"}
         </span>
         <input
           type="date"
           value={nextDueDate}
           onChange={(e) => setNextDueDate(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         />
       </label>
 
       <div>
-        <p className="mb-1 text-xs font-medium text-slate-500">Repeats</p>
+        <p className="mb-1 text-xs font-medium text-muted">Repeats</p>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setIsRepeating(true)}
             aria-pressed={isRepeating}
             className={`min-h-[44px] flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
-              isRepeating ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+              isRepeating ? "bg-accent text-white" : "bg-surface-2 text-muted"
             }`}
           >
             Yes · recurring
@@ -338,13 +360,13 @@ function ChoreForm({
             onClick={() => setIsRepeating(false)}
             aria-pressed={!isRepeating}
             className={`min-h-[44px] flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
-              !isRepeating ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+              !isRepeating ? "bg-accent text-white" : "bg-surface-2 text-muted"
             }`}
           >
             No · one-off
           </button>
         </div>
-        <p className="mt-1 text-[11px] text-slate-400">
+        <p className="mt-1 text-[11px] text-dim">
           {isRepeating
             ? "Due date advances by the frequency each time it's done."
             : "Archived once done — no new due date."}
@@ -355,10 +377,10 @@ function ChoreForm({
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes (optional)"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
       />
 
-      {err && <p className="text-xs text-red-600">{err}</p>}
+      {err && <p className="text-xs text-coral">{err}</p>}
 
       <div className="flex gap-2">
         <button
@@ -372,7 +394,7 @@ function ChoreForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-500"
+            className="rounded-lg bg-surface-2 px-4 py-2.5 text-sm font-medium text-muted"
           >
             Cancel
           </button>

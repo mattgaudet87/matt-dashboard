@@ -130,9 +130,12 @@ export async function GET() {
   for (const e of monthEntries) {
     spentByCategory.set(e.categoryId, (spentByCategory.get(e.categoryId) ?? 0) + e.amount);
   }
+  // Spending totals exclude savings categories entirely — matches /api/budget,
+  // so "Budget Left" on Home and "Remaining" on Money agree.
   let totalBudget = 0;
   let totalSpent = 0;
   for (const c of activeCategories) {
+    if (c.kind === "saving") continue;
     totalBudget += c.monthlyBudget;
     totalSpent += spentByCategory.get(c.id) ?? 0;
   }

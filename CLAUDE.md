@@ -62,10 +62,18 @@ POST /api/people/[id]/contact | GET|POST /api/chores | PATCH /api/chores/[id]/do
 GET|POST /api/dates | POST /api/health/workout
 GET|POST /api/budget/categories | PATCH /api/budget/categories/[id] | GET /api/xp
 
-## Design rules
-- Blue accent: #1A56A0 | Tailwind only, no custom CSS files
-- Mobile-first, min tap target 44px | No gradients or card shadows
-- Urgency: red = overdue, amber = soon, green = good
+## Design rules (Dark Redesign 2026)
+Dark, gamified theme. Tailwind v4 only; theme tokens live in app/globals.css.
+- Background #0A0C12 | Surface (cards) #12141C | Card border 1px solid #1C1F2E | Card radius 18px (tight rows 13–16px) | No box-shadow on cards
+- Accent / XP purple #7B61FF | Gold/Rewards #F5C842 | Fire/Streak #FF6B35 | Emerald/Done #2DD4A0 | Coral/Overdue #FF5254 | Sky/Health #5BB8FF
+- Text: primary #EFF1F9 | muted #7A80A0 | dim #4A5070
+- Font: Space Grotesk only (via next/font). Hero/greeting 700/26px, screen title 700/22px, hero numbers 700/28–36px, section heading 600/15px, body 500/13px, CAPS badge 600/10px
+- Gradients ARE allowed on progress bars / XP ring / glows (e.g. budget bars #2DD4A0→#5BEAD4; XP ring #7B61FF→#A78BFA). XP bar always glows: box-shadow 0 0 8px rgba(123,97,255,.65)
+- Mobile-first, min tap target 44px
+- Nav: 5 tabs Home/Grow/People/Money/Me. Active = pill 44×28px, radius 999px, accent at 15% opacity; icon + label turn #7B61FF
+- Animations: slideIn on each screen root (opacity 0→1 + translateY 8→0, 280ms), habit circle scale 1→1.25→1 on complete, persistent XP glow
+- Urgency: coral #FF5254 = overdue, amber/gold = soon, emerald #2DD4A0 = good
+- Spacing: screen padding 18–20px H, card gap 8–10px, inner card padding 13–16px, section gap 18–22px, nav height 80px
 
 ## Do NOT
 - Add auth or user login
