@@ -7,12 +7,12 @@ import type { TaskRow, TasksResponse } from "@/lib/types";
 const CATEGORIES = ["personal", "health", "finance", "family", "home", "chore"] as const;
 
 const CATEGORY_TONE: Record<string, string> = {
-  health: "bg-emerald-100 text-emerald-700",
-  finance: "bg-sky-100 text-sky-700",
-  family: "bg-rose-100 text-rose-700",
-  home: "bg-amber-100 text-amber-700",
-  personal: "bg-violet-100 text-violet-700",
-  chore: "bg-slate-100 text-slate-600",
+  health: "bg-emerald/15 text-emerald",
+  finance: "bg-sky/15 text-sky",
+  family: "bg-coral/15 text-coral",
+  home: "bg-gold/15 text-gold",
+  personal: "bg-accent-2/15 text-accent-2",
+  chore: "bg-surface-2 text-muted",
 };
 
 function todayIso() {
@@ -72,12 +72,12 @@ export default function TasksPage() {
   }
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-slate-400">Loading tasks…</p>;
+    return <p className="py-12 text-center text-dim">Loading tasks…</p>;
   }
   if (error && !data) {
     return (
       <div className="py-12 text-center">
-        <p className="text-slate-500">Couldn’t load your tasks.</p>
+        <p className="text-muted">Couldn’t load your tasks.</p>
         <button
           onClick={() => load(filter)}
           className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
@@ -90,11 +90,11 @@ export default function TasksPage() {
   if (!data) return null;
 
   return (
-    <div className="space-y-5">
+    <div className="animate-screen space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Tasks</h1>
-          <p className="text-sm text-slate-500">Complete a task · +5 XP each</p>
+          <h1 className="text-[22px] font-bold">Tasks</h1>
+          <p className="text-sm text-muted">Complete a task · +5 XP each</p>
         </div>
         <button
           onClick={() => setShowForm((s) => !s)}
@@ -121,7 +121,7 @@ export default function TasksPage() {
             key={f}
             onClick={() => setFilter(f)}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize ${
-              filter === f ? "bg-accent text-white" : "bg-white text-slate-500"
+              filter === f ? "bg-accent text-white" : "bg-surface text-muted"
             }`}
           >
             {f === "open" ? "Open" : "Completed"}
@@ -130,7 +130,7 @@ export default function TasksPage() {
       </div>
 
       {data.tasks.length === 0 ? (
-        <p className="rounded-xl bg-white px-3 py-8 text-center text-sm text-slate-400">
+        <p className="rounded-[18px] border border-line bg-surface px-3 py-8 text-center text-sm text-dim">
           {filter === "open" ? "No open tasks. 🎉" : "No completed tasks yet."}
         </p>
       ) : (
@@ -169,7 +169,7 @@ function TaskCard({
   const done = task.status === "done";
   const overdue = !done && task.dueDate !== null && task.dueDate < todayIso();
   return (
-    <li className="rounded-xl bg-white p-3">
+    <li className="rounded-[18px] border border-line bg-surface p-3">
       <div className="flex items-center gap-3">
         <button
           onClick={done ? onReopen : onComplete}
@@ -178,16 +178,16 @@ function TaskCard({
           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-lg ${
             done
               ? "border-accent bg-accent text-white"
-              : "border-slate-300 text-transparent active:bg-slate-50"
+              : "border-[#3A3F58] text-transparent active:bg-surface-2"
           } disabled:opacity-60`}
         >
           ✓
         </button>
         <div className="min-w-0 flex-1">
-          <p className={`truncate font-medium ${done ? "text-slate-400 line-through" : ""}`}>
+          <p className={`truncate font-medium ${done ? "text-dim line-through" : ""}`}>
             {task.title}
           </p>
-          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-dim">
             <span
               className={`rounded px-1.5 py-0.5 font-semibold uppercase ${
                 CATEGORY_TONE[task.category] ?? CATEGORY_TONE.personal
@@ -196,12 +196,12 @@ function TaskCard({
               {task.category}
             </span>
             {task.priority === "high" && (
-              <span className="rounded bg-amber-100 px-1.5 py-0.5 font-semibold uppercase text-amber-700">
+              <span className="rounded bg-gold/15 px-1.5 py-0.5 font-semibold uppercase text-gold">
                 High
               </span>
             )}
             {task.dueDate && (
-              <span className={overdue ? "font-medium text-red-600" : ""}>
+              <span className={overdue ? "font-medium text-coral" : ""}>
                 {overdue ? "overdue · " : "due "}
                 {task.dueDate}
               </span>
@@ -211,12 +211,12 @@ function TaskCard({
         <button
           onClick={onArchive}
           disabled={pending}
-          className="shrink-0 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
+          className="shrink-0 text-xs font-medium text-dim active:text-muted disabled:opacity-60"
         >
           Archive
         </button>
       </div>
-      {task.notes && <p className="mt-2 pl-14 text-xs text-slate-500">{task.notes}</p>}
+      {task.notes && <p className="mt-2 pl-14 text-xs text-muted">{task.notes}</p>}
     </li>
   );
 }
@@ -262,17 +262,17 @@ function AddTaskForm({ onCreated }: { onCreated: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl bg-white p-4">
+    <form onSubmit={submit} className="space-y-3 rounded-[18px] border border-line bg-surface p-4">
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Task title"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         autoFocus
       />
 
       <div>
-        <p className="mb-1 text-xs font-medium text-slate-500">Category</p>
+        <p className="mb-1 text-xs font-medium text-muted">Category</p>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((c) => (
             <button
@@ -280,7 +280,7 @@ function AddTaskForm({ onCreated }: { onCreated: () => void }) {
               type="button"
               onClick={() => setCategory(c)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${
-                category === c ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+                category === c ? "bg-accent text-white" : "bg-surface-2 text-muted"
               }`}
             >
               {c}
@@ -291,7 +291,7 @@ function AddTaskForm({ onCreated }: { onCreated: () => void }) {
 
       <div className="flex items-end gap-3">
         <div>
-          <p className="mb-1 text-xs font-medium text-slate-500">Priority</p>
+          <p className="mb-1 text-xs font-medium text-muted">Priority</p>
           <div className="flex gap-2">
             {(["normal", "high"] as const).map((p) => (
               <button
@@ -299,7 +299,7 @@ function AddTaskForm({ onCreated }: { onCreated: () => void }) {
                 type="button"
                 onClick={() => setPriority(p)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${
-                  priority === p ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+                  priority === p ? "bg-accent text-white" : "bg-surface-2 text-muted"
                 }`}
               >
                 {p}
@@ -308,12 +308,12 @@ function AddTaskForm({ onCreated }: { onCreated: () => void }) {
           </div>
         </div>
         <label className="flex-1">
-          <span className="mb-1 block text-xs font-medium text-slate-500">Due (optional)</span>
+          <span className="mb-1 block text-xs font-medium text-muted">Due (optional)</span>
           <input
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+            className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
           />
         </label>
       </div>
@@ -322,10 +322,10 @@ function AddTaskForm({ onCreated }: { onCreated: () => void }) {
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes (optional)"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
       />
 
-      {err && <p className="text-xs text-red-600">{err}</p>}
+      {err && <p className="text-xs text-coral">{err}</p>}
 
       <button
         type="submit"

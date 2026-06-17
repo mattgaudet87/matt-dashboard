@@ -25,9 +25,9 @@ const TYPE_EMOJI: Record<string, string> = {
 };
 
 const URGENCY_TONE: Record<DateUrgency, string> = {
-  urgent: "text-red-600",
-  soon: "text-amber-600",
-  normal: "text-slate-400",
+  urgent: "text-coral",
+  soon: "text-gold",
+  normal: "text-dim",
 };
 
 export default function DatesPage() {
@@ -74,12 +74,12 @@ export default function DatesPage() {
   }
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-slate-400">Loading dates…</p>;
+    return <p className="py-12 text-center text-dim">Loading dates…</p>;
   }
   if (error && !data) {
     return (
       <div className="py-12 text-center">
-        <p className="text-slate-500">Couldn’t load your dates.</p>
+        <p className="text-muted">Couldn’t load your dates.</p>
         <button
           onClick={load}
           className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
@@ -92,11 +92,11 @@ export default function DatesPage() {
   if (!data) return null;
 
   return (
-    <div className="space-y-5">
+    <div className="animate-screen space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Important Dates</h1>
-          <p className="text-sm text-slate-500">Birthdays, renewals & reminders</p>
+          <h1 className="text-[22px] font-bold">Important Dates</h1>
+          <p className="text-sm text-muted">Birthdays, renewals & reminders</p>
         </div>
         <button
           onClick={() => setShowForm((s) => !s)}
@@ -116,7 +116,7 @@ export default function DatesPage() {
       )}
 
       {data.dates.length === 0 ? (
-        <p className="rounded-xl bg-white px-3 py-8 text-center text-sm text-slate-400">
+        <p className="rounded-[18px] border border-line bg-surface px-3 py-8 text-center text-sm text-dim">
           No dates yet. Add birthdays, anniversaries and renewals.
         </p>
       ) : (
@@ -153,7 +153,7 @@ function DateCard({
 
   if (editing) {
     return (
-      <li className="rounded-xl bg-white p-1">
+      <li className="rounded-[18px] border border-line bg-surface p-1">
         <DateForm
           initial={date}
           onSaved={async () => {
@@ -167,7 +167,7 @@ function DateCard({
   }
 
   return (
-    <li className="flex items-center gap-3 rounded-xl bg-white p-3">
+    <li className="flex items-center gap-3 rounded-[18px] border border-line bg-surface p-3">
       <span className="text-xl" aria-hidden>
         {TYPE_EMOJI[date.type] ?? "📅"}
       </span>
@@ -175,12 +175,12 @@ function DateCard({
         <div className="flex items-center gap-2">
           <p className="truncate font-medium">{date.title}</p>
           {date.isRecurring === 1 && (
-            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-500">
+            <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted">
               Yearly
             </span>
           )}
         </div>
-        <p className="mt-0.5 text-xs text-slate-400">
+        <p className="mt-0.5 text-xs text-dim">
           {date.eventDate} ·{" "}
           <span className={`font-medium ${URGENCY_TONE[date.urgency]}`}>
             {relativeDays(date.daysUntil)}
@@ -197,7 +197,7 @@ function DateCard({
       <button
         onClick={onDismiss}
         disabled={pending}
-        className="shrink-0 px-1 py-2 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
+        className="shrink-0 px-1 py-2 text-xs font-medium text-dim active:text-muted disabled:opacity-60"
       >
         Dismiss
       </button>
@@ -279,27 +279,27 @@ function DateForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl bg-white p-4">
+    <form onSubmit={submit} className="space-y-3 rounded-[18px] border border-line bg-surface p-4">
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title (e.g. Dad’s birthday)"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         autoFocus
       />
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-500">Date</span>
+        <span className="mb-1 block text-xs font-medium text-muted">Date</span>
         <input
           type="date"
           value={eventDate}
           onChange={(e) => setEventDate(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         />
       </label>
 
       <div>
-        <p className="mb-1 text-xs font-medium text-slate-500">Type</p>
+        <p className="mb-1 text-xs font-medium text-muted">Type</p>
         <div className="flex flex-wrap gap-2">
           {TYPES.map((t) => (
             <button
@@ -307,7 +307,7 @@ function DateForm({
               type="button"
               onClick={() => setType(t)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${
-                type === t ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+                type === t ? "bg-accent text-white" : "bg-surface-2 text-muted"
               }`}
             >
               {TYPE_EMOJI[t]} {t}
@@ -322,32 +322,32 @@ function DateForm({
           onClick={() => setIsRecurring((r) => !r)}
           aria-pressed={isRecurring}
           className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-            isRecurring ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+            isRecurring ? "bg-accent text-white" : "bg-surface-2 text-muted"
           }`}
         >
           {isRecurring ? "Repeats yearly ✓" : "Repeats yearly"}
         </button>
         <label className="flex flex-1 items-center gap-2">
-          <span className="text-xs font-medium text-slate-500">Remind (days before)</span>
+          <span className="text-xs font-medium text-muted">Remind (days before)</span>
           <input
             type="number"
             inputMode="numeric"
             min={0}
             value={reminderOffsetDays}
             onChange={(e) => setReminderOffsetDays(e.target.value)}
-            className="w-16 rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-accent"
+            className="w-16 rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-2 py-2 text-sm outline-none focus:border-accent"
           />
         </label>
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-500">
+        <span className="mb-1 block text-xs font-medium text-muted">
           Linked person (optional)
         </span>
         <select
           value={personId ?? ""}
           onChange={(e) => setPersonId(e.target.value ? Number(e.target.value) : null)}
-          className="min-h-[44px] w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="min-h-[44px] w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
         >
           <option value="">None</option>
           {people.map((p) => (
@@ -358,7 +358,7 @@ function DateForm({
         </select>
       </label>
 
-      {err && <p className="text-xs text-red-600">{err}</p>}
+      {err && <p className="text-xs text-coral">{err}</p>}
 
       <div className="flex gap-2">
         <button
@@ -372,7 +372,7 @@ function DateForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-500"
+            className="rounded-lg bg-surface-2 px-4 py-2.5 text-sm font-medium text-muted"
           >
             Cancel
           </button>
