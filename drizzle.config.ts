@@ -1,0 +1,15 @@
+import { config } from "dotenv";
+import { defineConfig } from "drizzle-kit";
+
+// Load .env.local for CLI commands (drizzle-kit push/generate/studio).
+config({ path: ".env.local" });
+
+export default defineConfig({
+  schema: "./lib/schema.ts",
+  out: "./drizzle",
+  dialect: "turso",
+  dbCredentials: {
+    url: process.env.TURSO_DATABASE_URL!,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  },
+});
