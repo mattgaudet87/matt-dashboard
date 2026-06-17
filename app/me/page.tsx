@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   CartesianGrid,
@@ -11,9 +10,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Card, SectionHeader, StatCard } from "../components/ui";
+import { Card, SectionHeader } from "../components/ui";
 import { useDashboard } from "../providers";
-import BudgetCategoriesSection from "./BudgetCategoriesSection";
 import type { XpRange, XpResponse } from "@/lib/types";
 
 const RANGES: { value: XpRange; label: string }[] = [
@@ -72,6 +70,7 @@ export default function MePage() {
   const level = summary?.level ?? dash?.user?.level ?? 1;
   const into = summary?.xpIntoLevel ?? dash?.user?.progress?.xpIntoLevel ?? 0;
   const forLevel = summary?.xpForLevel ?? dash?.user?.progress?.xpForLevel ?? 500;
+  const toNext = summary?.xpToNext ?? dash?.user?.progress?.xpToNext ?? forLevel - into;
   const pct = forLevel > 0 ? Math.min(1, into / forLevel) : 0;
 
   return (
@@ -85,23 +84,10 @@ export default function MePage() {
           <p className="truncate text-lg font-semibold text-ink">{name}</p>
           <p className="text-xs text-muted">Personal life dashboard</p>
           <p className="mt-2 text-xs text-dim">
-            {into} / {forLevel} XP · {summary?.xpToNext ?? forLevel - into} to Level {level + 1}
+            {into} / {forLevel} XP · {toNext} to Level {level + 1}
           </p>
         </div>
       </Card>
-
-      {/* XP summary */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <StatCard label="Total XP" value={`${summary?.total ?? 0}`} sub="all time" tone="accent" />
-        <StatCard label="This Week" value={`${summary?.week ?? 0}`} sub="XP earned" />
-        <StatCard label="This Month" value={`${summary?.month ?? 0}`} sub="XP earned" />
-        <StatCard
-          label="To Next Lvl"
-          value={`${summary?.xpToNext ?? 0}`}
-          sub="XP needed"
-          tone="gold"
-        />
-      </div>
 
       {/* XP over time */}
       <section>
@@ -211,19 +197,6 @@ export default function MePage() {
           </Card>
         )}
       </section>
-
-      {/* Manage */}
-      <section>
-        <SectionHeader title="Manage" />
-        <Card padded={false} className="divide-y divide-line">
-          <ManageLink href="/grow" label="Habits" hint="Add, edit, archive habits" />
-          <ManageLink href="/chores" label="Chores" hint="Recurring chores" />
-          <ManageLink href="/dates" label="Important Dates" hint="Birthdays & reminders" />
-        </Card>
-      </section>
-
-      {/* Budget categories */}
-      <BudgetCategoriesSection />
     </div>
   );
 }
@@ -263,22 +236,5 @@ function LevelRing({ level, pct }: { level: number; pct: number }) {
         <span className="text-2xl font-bold text-ink">{level}</span>
       </div>
     </div>
-  );
-}
-
-function ManageLink({ href, label, hint }: { href: string; label: string; hint: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex min-h-[56px] items-center justify-between px-4 py-3 active:bg-surface-2"
-    >
-      <span>
-        <span className="block font-medium text-ink">{label}</span>
-        <span className="block text-xs text-dim">{hint}</span>
-      </span>
-      <span aria-hidden className="text-lg text-dim">
-        ›
-      </span>
-    </Link>
   );
 }

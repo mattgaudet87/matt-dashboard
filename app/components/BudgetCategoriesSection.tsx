@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Card } from "../components/ui";
+import { Badge, Card } from "./ui";
 import { formatMoney } from "@/lib/format";
 import type { BudgetCategoriesResponse, BudgetCategory } from "@/lib/types";
 

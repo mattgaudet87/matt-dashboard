@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { formatMoney } from "@/lib/format";
 import type { BudgetCategoryRow, BudgetResponse } from "@/lib/types";
@@ -81,13 +82,21 @@ export default function MoneyPage() {
     <div className="animate-screen space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-[22px] font-bold">Finances</h1>
-        <button
-          onClick={() => setShowForm((s) => !s)}
-          disabled={spendCategories.length === 0}
-          className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
-        >
-          {showForm ? "Close" : "+ Spend"}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/money/categories"
+            className="rounded-lg border border-line px-3 py-2 text-sm font-semibold text-muted active:bg-surface-2"
+          >
+            Categories
+          </Link>
+          <button
+            onClick={() => setShowForm((s) => !s)}
+            disabled={spendCategories.length === 0}
+            className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+          >
+            {showForm ? "Close" : "+ Spend"}
+          </button>
+        </div>
       </div>
 
       {/* Month navigation */}
@@ -154,7 +163,7 @@ export default function MoneyPage() {
       {/* Spending categories */}
       {data.categories.length === 0 ? (
         <p className="rounded-[18px] border border-line bg-surface px-3 py-8 text-center text-sm text-dim">
-          No budget categories yet. Add them in Settings.
+          No budget categories yet. Add them from Categories above.
         </p>
       ) : (
         <section>
