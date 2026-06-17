@@ -69,6 +69,18 @@ export default function HabitsPage() {
     }
   }
 
+  async function uncomplete(h: HabitListItem) {
+    setPendingId(h.id, true);
+    try {
+      const res = await fetch(`/api/habits/${h.id}/log`, { method: "DELETE" });
+      if (res.ok || res.status === 404) {
+        await Promise.all([load(), refreshDashboard()]);
+      }
+    } finally {
+      setPendingId(h.id, false);
+    }
+  }
+
   async function archive(h: HabitListItem) {
     setPendingId(h.id, true);
     try {
@@ -137,6 +149,7 @@ export default function HabitsPage() {
               habit={h}
               pending={pending.has(h.id)}
               onComplete={() => complete(h)}
+              onUndo={() => uncomplete(h)}
               onArchive={() => archive(h)}
             />
           ))}
@@ -159,11 +172,13 @@ function HabitCard({
   habit,
   pending,
   onComplete,
+  onUndo,
   onArchive,
 }: {
   habit: HabitListItem;
   pending: boolean;
   onComplete: () => void;
+  onUndo: () => void;
   onArchive: () => void;
 }) {
   const done = habit.completedToday;
@@ -171,9 +186,9 @@ function HabitCard({
     <li className="rounded-xl bg-white p-3">
       <div className="flex items-center gap-3">
         <button
-          onClick={onComplete}
-          disabled={done || pending}
-          aria-label={done ? `${habit.name} completed` : `Complete ${habit.name}`}
+          onClick={done ? onUndo : onComplete}
+          disabled={pending}
+          aria-label={done ? `Undo ${habit.name}` : `Complete ${habit.name}`}
           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-lg ${
             done
               ? "border-accent bg-accent text-white"
@@ -197,13 +212,23 @@ function HabitCard({
             {habit.streak > 0 && <span>🔥 {habit.streak}-day streak</span>}
           </div>
         </div>
-        <button
-          onClick={onArchive}
-          disabled={pending}
-          className="shrink-0 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
-        >
-          Archive
-        </button>
+        {done ? (
+          <button
+            onClick={onUndo}
+            disabled={pending}
+            className="shrink-0 rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-500 active:bg-slate-50 disabled:opacity-60"
+          >
+            Undo
+          </button>
+        ) : (
+          <button
+            onClick={onArchive}
+            disabled={pending}
+            className="shrink-0 px-1 py-2 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
+          >
+            Archive
+          </button>
+        )}
       </div>
       <div className="mt-3 pl-1">
         <DotGrid week={habit.week} showLabels size="md" />

@@ -23,23 +23,28 @@ export async function GET(req: Request) {
     .from(budgetEntries)
     .where(eq(budgetEntries.yearMonth, month));
 
-  // Sum spend per category (cents).
-  const spentByCategory = new Map<number, number>();
+  // Sum amount per category (cents). Works for both spend and saving entries.
+  const amountByCategory = new Map<number, number>();
   for (const e of entries) {
-    spentByCategory.set(e.categoryId, (spentByCategory.get(e.categoryId) ?? 0) + e.amount);
+    amountByCategory.set(e.categoryId, (amountByCategory.get(e.categoryId) ?? 0) + e.amount);
   }
 
+  // Spending totals exclude savings categories entirely.
   let totalBudget = 0;
   let totalSpent = 0;
   const categoryRows = categories.map((c) => {
-    const spent = spentByCategory.get(c.id) ?? 0;
-    totalBudget += c.monthlyBudget;
-    totalSpent += spent;
+    const amount = amountByCategory.get(c.id) ?? 0;
+    if (c.kind !== "saving") {
+      totalBudget += c.monthlyBudget;
+      totalSpent += amount;
+    }
     return {
       ...c,
-      spent,
-      remaining: c.monthlyBudget - spent,
-      overBudget: spent > c.monthlyBudget,
+      // For saving categories `spent` is the amount saved toward the goal.
+      spent: amount,
+      remaining: c.monthlyBudget - amount,
+      overBudget: c.kind !== "saving" && amount > c.monthlyBudget,
+      goalMet: c.kind === "saving" && c.monthlyBudget > 0 && amount >= c.monthlyBudget,
     };
   });
 

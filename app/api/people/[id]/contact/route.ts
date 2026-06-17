@@ -1,11 +1,29 @@
-// POST /api/people/[id]/contact — log contact with a person (+15 XP, highest action).
-import { eq } from "drizzle-orm";
+// GET  /api/people/[id]/contact — list a person's contact logs (newest first).
+// POST /api/people/[id]/contact — log contact with a person (+15 XP).
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { jsonError, jsonOk, parseBody } from "@/lib/api";
 import { awardXp, XP_VALUES } from "@/lib/award-xp";
 import { db } from "@/lib/db";
 import { todayIso } from "@/lib/domain";
 import { contactLogs, people } from "@/lib/schema";
+
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const personId = Number(id);
+  if (!Number.isInteger(personId)) return jsonError("Invalid person id", 400);
+
+  const logs = await db
+    .select()
+    .from(contactLogs)
+    .where(eq(contactLogs.personId, personId))
+    .orderBy(desc(contactLogs.contactDate), desc(contactLogs.id));
+
+  return jsonOk({ logs });
+}
 
 const contactSchema = z.object({
   // Defaults to today; editable.

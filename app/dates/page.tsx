@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { relativeDays } from "@/lib/format";
-import type { DateRow, DatesResponse, DateUrgency } from "@/lib/types";
+import type {
+  DateRow,
+  DatesResponse,
+  DateUrgency,
+  PeopleResponse,
+} from "@/lib/types";
+
+interface PersonOption {
+  id: number;
+  name: string;
+}
 
 const TYPES = ["birthday", "anniversary", "renewal", "event", "reminder"] as const;
 
@@ -97,8 +107,8 @@ export default function DatesPage() {
       </div>
 
       {showForm && (
-        <AddDateForm
-          onCreated={async () => {
+        <DateForm
+          onSaved={async () => {
             setShowForm(false);
             await load();
           }}
@@ -117,6 +127,7 @@ export default function DatesPage() {
               date={d}
               pending={pending.has(d.id)}
               onDismiss={() => dismiss(d)}
+              onSaved={load}
             />
           ))}
         </ul>
@@ -131,11 +142,30 @@ function DateCard({
   date,
   pending,
   onDismiss,
+  onSaved,
 }: {
   date: DateRow;
   pending: boolean;
   onDismiss: () => void;
+  onSaved: () => Promise<void> | void;
 }) {
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <li className="rounded-xl bg-white p-1">
+        <DateForm
+          initial={date}
+          onSaved={async () => {
+            setEditing(false);
+            await onSaved();
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      </li>
+    );
+  }
+
   return (
     <li className="flex items-center gap-3 rounded-xl bg-white p-3">
       <span className="text-xl" aria-hidden>
@@ -158,9 +188,16 @@ function DateCard({
         </p>
       </div>
       <button
+        onClick={() => setEditing(true)}
+        disabled={pending}
+        className="shrink-0 px-2 py-2 text-xs font-medium text-accent disabled:opacity-60"
+      >
+        Edit
+      </button>
+      <button
         onClick={onDismiss}
         disabled={pending}
-        className="shrink-0 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
+        className="shrink-0 px-1 py-2 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
       >
         Dismiss
       </button>
@@ -168,16 +205,44 @@ function DateCard({
   );
 }
 
-// --- add date form ---------------------------------------------------------
+// --- shared add / edit date form -------------------------------------------
 
-function AddDateForm({ onCreated }: { onCreated: () => void }) {
-  const [title, setTitle] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [type, setType] = useState<(typeof TYPES)[number]>("event");
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [reminderOffsetDays, setReminderOffsetDays] = useState("7");
+function DateForm({
+  initial,
+  onSaved,
+  onCancel,
+}: {
+  initial?: DateRow;
+  onSaved: () => void;
+  onCancel?: () => void;
+}) {
+  const isEdit = initial !== undefined;
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [eventDate, setEventDate] = useState(initial?.eventDate ?? "");
+  const [type, setType] = useState<(typeof TYPES)[number]>(
+    (initial?.type as (typeof TYPES)[number]) ?? "event",
+  );
+  const [isRecurring, setIsRecurring] = useState(initial?.isRecurring === 1);
+  const [reminderOffsetDays, setReminderOffsetDays] = useState(
+    String(initial?.reminderOffsetDays ?? 7),
+  );
+  const [personId, setPersonId] = useState<number | null>(initial?.personId ?? null);
+  const [people, setPeople] = useState<PersonOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/people", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { people: [] }))
+      .then((d: PeopleResponse) => {
+        if (active) setPeople(d.people.map((p) => ({ id: p.id, name: p.name })));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -188,22 +253,24 @@ function AddDateForm({ onCreated }: { onCreated: () => void }) {
     setSaving(true);
     setErr(null);
     try {
-      const res = await fetch("/api/dates", {
-        method: "POST",
+      const body = {
+        title: title.trim(),
+        eventDate,
+        type,
+        isRecurring: isRecurring ? 1 : 0,
+        reminderOffsetDays: Number(reminderOffsetDays) || 7,
+        personId,
+      };
+      const res = await fetch(isEdit ? `/api/dates/${initial!.id}` : "/api/dates", {
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          eventDate,
-          type,
-          isRecurring,
-          reminderOffsetDays: Number(reminderOffsetDays) || 7,
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? "Couldn’t save date");
+        const b = await res.json().catch(() => null);
+        throw new Error(b?.error ?? "Couldn’t save date");
       }
-      onCreated();
+      onSaved();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Couldn’t save date");
     } finally {
@@ -273,15 +340,44 @@ function AddDateForm({ onCreated }: { onCreated: () => void }) {
         </label>
       </div>
 
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-500">
+          Linked person (optional)
+        </span>
+        <select
+          value={personId ?? ""}
+          onChange={(e) => setPersonId(e.target.value ? Number(e.target.value) : null)}
+          className="min-h-[44px] w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        >
+          <option value="">None</option>
+          {people.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
       {err && <p className="text-xs text-red-600">{err}</p>}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-      >
-        {saving ? "Saving…" : "Add date"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {saving ? "Saving…" : isEdit ? "Save changes" : "Add date"}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-500"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

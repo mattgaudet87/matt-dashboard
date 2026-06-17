@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useDashboard } from "../providers";
 
 // Sticky top header on every page: level, XP progress bar, global streak.
+// Tapping anywhere on the bar navigates to the XP history page.
 export default function XpHeader() {
   const { data } = useDashboard();
   const user = data?.user;
@@ -12,7 +14,11 @@ export default function XpHeader() {
     : 0;
 
   return (
-    <header className="sticky top-0 z-20 bg-accent px-4 pb-3 pt-4 text-white">
+    <Link
+      href="/xp"
+      aria-label="View XP history"
+      className="sticky top-0 z-20 block bg-accent px-4 pb-3 pt-4 text-white active:bg-accent/90"
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="rounded-md bg-white/15 px-2 py-0.5 text-sm font-semibold">
@@ -37,6 +43,6 @@ export default function XpHeader() {
           ? `${progress.xpIntoLevel} / ${progress.xpForLevel} XP · ${progress.xpToNext} to level ${progress.level + 1}`
           : "Loading…"}
       </div>
-    </header>
+    </Link>
   );
 }

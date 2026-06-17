@@ -16,6 +16,9 @@ const createPersonSchema = z.object({
   checkinFrequencyDays: z.number().int().positive().default(30),
   notes: z.string().max(2000).nullish(),
   birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD").nullish(),
+  whenMet: z.string().max(2000).nullish(),
+  howMet: z.string().max(2000).nullish(),
+  sharedInterests: z.string().max(2000).nullish(),
 });
 
 export async function GET() {
@@ -55,7 +58,16 @@ export async function GET() {
 export async function POST(req: Request) {
   const parsed = await parseBody(req, createPersonSchema);
   if (!parsed.ok) return parsed.response;
-  const { name, relationshipType, checkinFrequencyDays, notes, birthday } = parsed.data;
+  const {
+    name,
+    relationshipType,
+    checkinFrequencyDays,
+    notes,
+    birthday,
+    whenMet,
+    howMet,
+    sharedInterests,
+  } = parsed.data;
 
   const [person] = await db
     .insert(people)
@@ -65,6 +77,9 @@ export async function POST(req: Request) {
       checkinFrequencyDays,
       notes: notes ?? null,
       birthday: birthday ?? null,
+      whenMet: whenMet ?? null,
+      howMet: howMet ?? null,
+      sharedInterests: sharedInterests ?? null,
     })
     .returning();
 

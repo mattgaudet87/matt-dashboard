@@ -14,6 +14,7 @@ const patchSchema = z
       .optional(),
     isRecurring: z.union([z.literal(0), z.literal(1)]).optional(),
     reminderOffsetDays: z.number().int().nonnegative().optional(),
+    personId: z.number().int().positive().nullish(),
     isActive: z.union([z.literal(0), z.literal(1)]).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, "No fields to update");
@@ -36,12 +37,14 @@ export async function PATCH(
   if (!date) return jsonError("Date not found", 404);
 
   const updates: Partial<typeof importantDates.$inferInsert> = {};
-  const { title, eventDate, type, isRecurring, reminderOffsetDays, isActive } = parsed.data;
+  const { title, eventDate, type, isRecurring, reminderOffsetDays, personId, isActive } =
+    parsed.data;
   if (title !== undefined) updates.title = title;
   if (eventDate !== undefined) updates.eventDate = eventDate;
   if (type !== undefined) updates.type = type;
   if (isRecurring !== undefined) updates.isRecurring = isRecurring;
   if (reminderOffsetDays !== undefined) updates.reminderOffsetDays = reminderOffsetDays;
+  if (personId !== undefined) updates.personId = personId ?? null;
   if (isActive !== undefined) updates.isActive = isActive;
 
   const [updated] = await db

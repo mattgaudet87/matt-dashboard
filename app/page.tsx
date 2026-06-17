@@ -29,8 +29,8 @@ export default function TodayPage() {
     setPendingKey(key, true);
     try {
       const res = await fetch(url, { method });
-      // 409 (already logged) is a no-op success for our purposes.
-      if (res.ok || res.status === 409) await refresh();
+      // 409 (already logged) / 404 (nothing to undo) are no-op successes.
+      if (res.ok || res.status === 409 || res.status === 404) await refresh();
     } finally {
       setPendingKey(key, false);
     }
@@ -100,6 +100,7 @@ export default function TodayPage() {
                 habit={h}
                 pending={pending.has(`habit:${h.id}`)}
                 onComplete={() => act(`habit:${h.id}`, `/api/habits/${h.id}/log`, "POST")}
+                onUndo={() => act(`habit:${h.id}`, `/api/habits/${h.id}/log`, "DELETE")}
               />
             ))}
           </ul>
@@ -209,18 +210,20 @@ function HabitRow({
   habit,
   pending,
   onComplete,
+  onUndo,
 }: {
   habit: TodayHabit;
   pending: boolean;
   onComplete: () => void;
+  onUndo: () => void;
 }) {
   const done = habit.completedToday;
   return (
     <li className="flex items-center gap-3 px-2 py-2">
       <button
-        onClick={onComplete}
-        disabled={done || pending}
-        aria-label={done ? `${habit.name} completed` : `Complete ${habit.name}`}
+        onClick={done ? onUndo : onComplete}
+        disabled={pending}
+        aria-label={done ? `Undo ${habit.name}` : `Complete ${habit.name}`}
         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-lg ${
           done
             ? "border-accent bg-accent text-white"
@@ -237,6 +240,15 @@ function HabitRow({
           <DotGrid week={habit.week} />
         </div>
       </div>
+      {done && (
+        <button
+          onClick={onUndo}
+          disabled={pending}
+          className="shrink-0 rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-500 active:bg-slate-50 disabled:opacity-60"
+        >
+          Undo
+        </button>
+      )}
     </li>
   );
 }

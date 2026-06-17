@@ -1,7 +1,10 @@
-// POST /api/budget/entry — log a spend against a category (amount in cents).
+// POST /api/budget/entry — log money against a category (amount in cents).
+// The entry type is derived from the category kind: a "saving" category records
+// a savings contribution (+20 XP, excluded from spending); "spend" otherwise.
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { jsonError, jsonOk, parseBody } from "@/lib/api";
+import { awardXp, XP_VALUES } from "@/lib/award-xp";
 import { db } from "@/lib/db";
 import { budgetCategories, budgetEntries } from "@/lib/schema";
 
@@ -25,11 +28,18 @@ export async function POST(req: Request) {
   if (!category) return jsonError("Budget category not found", 404);
 
   const yearMonth = entryDate.slice(0, 7); // YYYY-MM
+  const entryType = category.kind === "saving" ? "saving" : "spend";
 
   const [entry] = await db
     .insert(budgetEntries)
-    .values({ categoryId, amount, entryDate, yearMonth, note: note ?? null })
+    .values({ categoryId, amount, entryDate, yearMonth, entryType, note: note ?? null })
     .returning();
 
-  return jsonOk({ entry }, 201);
+  // Saving money is the highest-value action (+20 XP). Spending earns nothing.
+  let award = null;
+  if (entryType === "saving") {
+    award = await awardXp("saving", XP_VALUES.saving, entry.id);
+  }
+
+  return jsonOk({ entry, award }, 201);
 }

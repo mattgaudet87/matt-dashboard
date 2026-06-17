@@ -18,6 +18,10 @@ function dueLabel(c: ChoreRow): string {
   return `Next due ${c.nextDueDate}`;
 }
 
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function ChoresPage() {
   const { refresh: refreshDashboard } = useDashboard();
   const [data, setData] = useState<ChoresResponse | null>(null);
@@ -111,8 +115,8 @@ export default function ChoresPage() {
       </div>
 
       {showForm && (
-        <AddChoreForm
-          onCreated={async () => {
+        <ChoreForm
+          onSaved={async () => {
             setShowForm(false);
             await load();
           }}
@@ -132,6 +136,7 @@ export default function ChoresPage() {
               pending={pending.has(c.id)}
               onDone={() => done(c)}
               onArchive={() => archive(c)}
+              onSaved={load}
             />
           ))}
         </ul>
@@ -147,12 +152,31 @@ function ChoreCard({
   pending,
   onDone,
   onArchive,
+  onSaved,
 }: {
   chore: ChoreRow;
   pending: boolean;
   onDone: () => void;
   onArchive: () => void;
+  onSaved: () => Promise<void> | void;
 }) {
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <li className="rounded-xl bg-white p-1">
+        <ChoreForm
+          initial={chore}
+          onSaved={async () => {
+            setEditing(false);
+            await onSaved();
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      </li>
+    );
+  }
+
   return (
     <li className="rounded-xl bg-white p-3">
       <div className="flex items-center gap-3">
@@ -183,9 +207,16 @@ function ChoreCard({
           </p>
         </div>
         <button
+          onClick={() => setEditing(true)}
+          disabled={pending}
+          className="shrink-0 px-2 py-2 text-xs font-medium text-accent disabled:opacity-60"
+        >
+          Edit
+        </button>
+        <button
           onClick={onArchive}
           disabled={pending}
-          className="shrink-0 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
+          className="shrink-0 px-1 py-2 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
         >
           Archive
         </button>
@@ -195,12 +226,27 @@ function ChoreCard({
   );
 }
 
-// --- add chore form --------------------------------------------------------
+// --- shared add / edit chore form ------------------------------------------
 
-function AddChoreForm({ onCreated }: { onCreated: () => void }) {
-  const [name, setName] = useState("");
-  const [frequencyDays, setFrequencyDays] = useState<number>(7);
-  const [notes, setNotes] = useState("");
+function ChoreForm({
+  initial,
+  onSaved,
+  onCancel,
+}: {
+  initial?: ChoreRow;
+  onSaved: () => void;
+  onCancel?: () => void;
+}) {
+  const isEdit = initial !== undefined;
+  const [name, setName] = useState(initial?.name ?? "");
+  const [frequencyDays, setFrequencyDays] = useState<number>(
+    initial?.frequencyDays ?? 7,
+  );
+  const [nextDueDate, setNextDueDate] = useState(
+    initial?.nextDueDate ?? todayIso(),
+  );
+  const [isRepeating, setIsRepeating] = useState(initial?.isRepeating !== 0);
+  const [notes, setNotes] = useState(initial?.notes ?? "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -210,20 +256,23 @@ function AddChoreForm({ onCreated }: { onCreated: () => void }) {
     setSaving(true);
     setErr(null);
     try {
-      const res = await fetch("/api/chores", {
-        method: "POST",
+      const body = {
+        name: name.trim(),
+        frequencyDays,
+        nextDueDate,
+        isRepeating: isRepeating ? 1 : 0,
+        notes: notes.trim() || null,
+      };
+      const res = await fetch(isEdit ? `/api/chores/${initial!.id}` : "/api/chores", {
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          frequencyDays,
-          notes: notes.trim() || null,
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? "Couldn’t save chore");
+        const b = await res.json().catch(() => null);
+        throw new Error(b?.error ?? "Couldn’t save chore");
       }
-      onCreated();
+      onSaved();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Couldn’t save chore");
     } finally {
@@ -259,6 +308,49 @@ function AddChoreForm({ onCreated }: { onCreated: () => void }) {
         </div>
       </div>
 
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-500">
+          {isEdit ? "Next due date" : "Start date"}
+        </span>
+        <input
+          type="date"
+          value={nextDueDate}
+          onChange={(e) => setNextDueDate(e.target.value)}
+          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        />
+      </label>
+
+      <div>
+        <p className="mb-1 text-xs font-medium text-slate-500">Repeats</p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setIsRepeating(true)}
+            aria-pressed={isRepeating}
+            className={`min-h-[44px] flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
+              isRepeating ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            Yes · recurring
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsRepeating(false)}
+            aria-pressed={!isRepeating}
+            className={`min-h-[44px] flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
+              !isRepeating ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            No · one-off
+          </button>
+        </div>
+        <p className="mt-1 text-[11px] text-slate-400">
+          {isRepeating
+            ? "Due date advances by the frequency each time it's done."
+            : "Archived once done — no new due date."}
+        </p>
+      </div>
+
       <input
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
@@ -268,13 +360,24 @@ function AddChoreForm({ onCreated }: { onCreated: () => void }) {
 
       {err && <p className="text-xs text-red-600">{err}</p>}
 
-      <button
-        type="submit"
-        disabled={saving || !name.trim()}
-        className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-      >
-        {saving ? "Saving…" : "Add chore"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving || !name.trim()}
+          className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {saving ? "Saving…" : isEdit ? "Save changes" : "Add chore"}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-500"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

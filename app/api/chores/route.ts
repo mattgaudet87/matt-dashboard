@@ -10,6 +10,12 @@ import { chores } from "@/lib/schema";
 const createChoreSchema = z.object({
   name: z.string().trim().min(1).max(120),
   frequencyDays: z.number().int().positive(),
+  // Start date — first next_due_date. Defaults to today when omitted.
+  nextDueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD")
+    .optional(),
+  isRepeating: z.union([z.literal(0), z.literal(1)]).default(1),
   notes: z.string().max(1000).nullish(),
 });
 
@@ -33,12 +39,18 @@ export async function GET() {
 export async function POST(req: Request) {
   const parsed = await parseBody(req, createChoreSchema);
   if (!parsed.ok) return parsed.response;
-  const { name, frequencyDays, notes } = parsed.data;
+  const { name, frequencyDays, nextDueDate, isRepeating, notes } = parsed.data;
 
-  // New chores are due immediately (next_due_date = today).
+  // First next_due_date is the chosen start date, defaulting to today.
   const [chore] = await db
     .insert(chores)
-    .values({ name, frequencyDays, nextDueDate: todayIso(), notes: notes ?? null })
+    .values({
+      name,
+      frequencyDays,
+      nextDueDate: nextDueDate ?? todayIso(),
+      isRepeating,
+      notes: notes ?? null,
+    })
     .returning();
 
   return jsonOk({ chore }, 201);
