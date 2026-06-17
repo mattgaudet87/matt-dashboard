@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import HealthPage from "../health/page";
-import HabitsPage from "../habits/page";
+import HealthSection from "./HealthSection";
+import HabitsSection from "./HabitsSection";
 
 // "Grow" merges Health and Habits behind sub-tabs (redesign IA).
-// Phase 2 composes the existing screens; Phase 4 restyles them to dark cards.
 const TABS = [
   { key: "health", label: "Health" },
   { key: "habits", label: "Habits" },
@@ -16,7 +15,7 @@ export default function GrowPage() {
 
   return (
     <div className="animate-screen space-y-4">
-      <div className="flex gap-1 rounded-full bg-surface p-1">
+      <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -31,7 +30,7 @@ export default function GrowPage() {
         ))}
       </div>
 
-      {tab === "health" ? <HealthPage /> : <HabitsPage />}
+      {tab === "health" ? <HealthSection /> : <HabitsSection />}
     </div>
   );
 }
