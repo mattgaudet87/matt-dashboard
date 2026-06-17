@@ -2,10 +2,10 @@
 // next_due_date advances by frequency_days FROM the completion date (not the
 // old due date) to avoid catch-up backlog.
 import { addDays, format, parseISO } from "date-fns";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { jsonError, jsonOk } from "@/lib/api";
-import { awardXp, XP_VALUES } from "@/lib/award-xp";
+import { awardXp, reverseXp, XP_VALUES } from "@/lib/award-xp";
 import { db } from "@/lib/db";
 import { todayIso } from "@/lib/domain";
 import { choreLogs, chores } from "@/lib/schema";
@@ -65,4 +65,43 @@ export async function PATCH(
   const award = await awardXp("chore", xp, log.id);
 
   return jsonOk({ chore: updated, log, award });
+}
+
+// DELETE /api/chores/[id]/done — undo the most recent completion: reverse its
+// XP, remove the chore_log, and roll the chore back (repeating → due again on
+// the undone completion date; one-off → un-archived).
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const choreId = Number(id);
+  if (!Number.isInteger(choreId)) return jsonError("Invalid chore id", 400);
+
+  const [chore] = await db.select().from(chores).where(eq(chores.id, choreId));
+  if (!chore) return jsonError("Chore not found", 404);
+
+  const [log] = await db
+    .select()
+    .from(choreLogs)
+    .where(eq(choreLogs.choreId, choreId))
+    .orderBy(desc(choreLogs.id))
+    .limit(1);
+  if (!log) return jsonError("Nothing to undo for this chore", 404);
+
+  const award = await reverseXp("chore", log.xpAwarded, log.id);
+  await db.delete(choreLogs).where(eq(choreLogs.id, log.id));
+
+  // Roll the chore back to its pre-completion state.
+  const setValues =
+    chore.isRepeating === 0
+      ? { isActive: 1 as const }
+      : { nextDueDate: log.completedDate };
+  const [updated] = await db
+    .update(chores)
+    .set(setValues)
+    .where(eq(chores.id, choreId))
+    .returning();
+
+  return jsonOk({ chore: updated, undone: true, award });
 }

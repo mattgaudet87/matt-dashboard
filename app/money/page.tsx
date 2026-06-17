@@ -183,7 +183,204 @@ export default function MoneyPage() {
           )}
         </section>
       )}
+
+      {/* Recent transactions — edit / delete logged entries */}
+      <TransactionsSection
+        entries={data.entries}
+        categories={data.categories}
+        onChanged={() => load(month)}
+      />
     </div>
+  );
+}
+
+// --- recent transactions ---------------------------------------------------
+
+const txInputCls =
+  "w-full rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-ink outline-none placeholder:text-dim focus:border-accent";
+
+function TransactionsSection({
+  entries,
+  categories,
+  onChanged,
+}: {
+  entries: BudgetResponse["entries"];
+  categories: BudgetCategoryRow[];
+  onChanged: () => void;
+}) {
+  const nameById = new Map(categories.map((c) => [c.id, c.name]));
+  const sorted = [...entries].sort((a, b) =>
+    a.entryDate === b.entryDate ? b.id - a.id : b.entryDate.localeCompare(a.entryDate),
+  );
+
+  return (
+    <section>
+      <h2 className="mb-2.5 px-0.5 text-[15px] font-semibold text-ink">This Month’s Transactions</h2>
+      {sorted.length === 0 ? (
+        <div className="rounded-[18px] border border-line bg-surface p-4">
+          <p className="text-center text-sm text-muted">No transactions logged this month.</p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-line overflow-hidden rounded-[18px] border border-line bg-surface">
+          {sorted.map((e) => (
+            <TransactionRow
+              key={e.id}
+              entry={e}
+              categoryName={nameById.get(e.categoryId) ?? "—"}
+              onChanged={onChanged}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function TransactionRow({
+  entry,
+  categoryName,
+  onChanged,
+}: {
+  entry: BudgetResponse["entries"][number];
+  categoryName: string;
+  onChanged: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [amount, setAmount] = useState(String(entry.amount / 100));
+  const [date, setDate] = useState(entry.entryDate);
+  const [note, setNote] = useState(entry.note ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const dollars = Number(amount);
+    if (!Number.isFinite(dollars) || dollars <= 0) {
+      setErr("Enter an amount greater than 0");
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/budget/entry/${entry.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Math.round(dollars * 100),
+          entryDate: date,
+          note: note.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => null);
+        throw new Error(b?.error ?? "Couldn’t save");
+      }
+      setEditing(false);
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn’t save");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    const saving = entry.entryType === "saving";
+    if (!confirm(saving ? "Delete this savings entry? This removes 20 XP." : "Delete this transaction?")) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/budget/entry/${entry.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const b = await res.json().catch(() => null);
+        throw new Error(b?.error ?? "Couldn’t delete");
+      }
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn’t delete");
+      setBusy(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <li>
+        <form onSubmit={save} className="space-y-2 p-3">
+          <div className="flex gap-2">
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0.01"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              className={txInputCls}
+            />
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className={txInputCls}
+            />
+          </div>
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Note (optional)"
+            className={txInputCls}
+          />
+          {err && <p className="text-xs text-coral">{err}</p>}
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={busy}
+              className="flex-1 rounded-lg bg-accent py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {busy ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-lg bg-surface-2 px-4 py-2 text-sm font-medium text-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex items-center gap-3 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-medium text-ink">
+          {categoryName}
+          {entry.entryType === "saving" && <span className="ml-2 text-[11px] text-emerald">savings</span>}
+        </p>
+        <p className="truncate text-xs text-dim">
+          {entry.entryDate}
+          {entry.note ? ` · ${entry.note}` : ""}
+        </p>
+        {err && <p className="text-xs text-coral">{err}</p>}
+      </div>
+      <span className="shrink-0 text-sm font-semibold text-ink">{formatMoney(entry.amount)}</span>
+      <button
+        onClick={() => setEditing(true)}
+        disabled={busy}
+        className="shrink-0 px-2 py-2 text-xs font-medium text-accent disabled:opacity-60"
+      >
+        Edit
+      </button>
+      <button
+        onClick={remove}
+        disabled={busy}
+        className="shrink-0 px-1 py-2 text-xs font-medium text-coral disabled:opacity-60"
+      >
+        Delete
+      </button>
+    </li>
   );
 }
 
