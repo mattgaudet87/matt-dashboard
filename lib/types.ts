@@ -232,5 +232,41 @@ export interface DatesResponse {
   dates: DateRow[];
 }
 
+// --- Settings: budget categories (/api/budget/categories) -----------------
+export interface BudgetCategory {
+  id: number;
+  name: string;
+  monthlyBudget: number; // cents
+  icon: string | null;
+  sortOrder: number;
+  isActive: number;
+  createdAt: string;
+}
+
+export interface BudgetCategoriesResponse {
+  categories: BudgetCategory[];
+}
+
+// --- Settings: XP history (/api/xp) ---------------------------------------
+export interface XpLogEntry {
+  id: number;
+  actionType: string;
+  xpAwarded: number;
+  referenceId: number | null;
+  createdAt: string;
+}
+
+export interface XpByType {
+  actionType: string;
+  xp: number;
+  count: number;
+}
+
+export interface XpResponse {
+  total: number;
+  byType: XpByType[];
+  recent: XpLogEntry[];
+}
+
 // Re-export so client modules can import urgency unions from one place.
 export type { RelationshipUrgency, DateUrgency };

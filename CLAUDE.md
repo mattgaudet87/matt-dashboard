@@ -60,6 +60,7 @@ GET /api/today | POST /api/habits/[id]/log (409 if duplicate) | GET|POST /api/ta
 PATCH /api/tasks/[id] | GET /api/budget | POST /api/budget/entry | GET|POST /api/people
 POST /api/people/[id]/contact | GET|POST /api/chores | PATCH /api/chores/[id]/done
 GET|POST /api/dates | POST /api/health/workout
+GET|POST /api/budget/categories | PATCH /api/budget/categories/[id] | GET /api/xp
 
 ## Design rules
 - Blue accent: #1A56A0 | Tailwind only, no custom CSS files
