@@ -136,6 +136,9 @@ export interface PersonListItem {
   checkinFrequencyDays: number;
   notes: string | null;
   birthday: string | null;
+  whenMet: string | null;
+  howMet: string | null;
+  sharedInterests: string | null;
   isActive: number;
   createdAt: string;
   lastContactDate: string | null;
@@ -147,18 +150,33 @@ export interface PeopleResponse {
   people: PersonListItem[];
 }
 
+export interface ContactLogRow {
+  id: number;
+  personId: number;
+  contactDate: string;
+  note: string | null;
+  xpAwarded: number;
+  createdAt: string;
+}
+
+export interface ContactLogsResponse {
+  logs: ContactLogRow[];
+}
+
 // --- Money page (/api/budget) ---------------------------------------------
 export interface BudgetCategoryRow {
   id: number;
   name: string;
-  monthlyBudget: number; // cents
+  monthlyBudget: number; // cents (monthly goal for saving categories)
+  kind: "spend" | "saving";
   icon: string | null;
   sortOrder: number;
   isActive: number;
   createdAt: string;
-  spent: number; // cents
+  spent: number; // cents (amount saved for saving categories)
   remaining: number; // cents
   overBudget: boolean;
+  goalMet: boolean; // saving categories: true once the goal is reached
 }
 
 export interface BudgetEntryRow {
@@ -167,6 +185,7 @@ export interface BudgetEntryRow {
   amount: number; // cents
   entryDate: string;
   yearMonth: string;
+  entryType: "spend" | "saving";
   note: string | null;
   createdAt: string;
 }
@@ -203,6 +222,7 @@ export interface ChoreRow {
   frequencyDays: number;
   nextDueDate: string;
   notes: string | null;
+  isRepeating: number;
   isActive: number;
   createdAt: string;
   dueToday: boolean;
@@ -237,6 +257,7 @@ export interface BudgetCategory {
   id: number;
   name: string;
   monthlyBudget: number; // cents
+  kind: "spend" | "saving";
   icon: string | null;
   sortOrder: number;
   isActive: number;
@@ -262,10 +283,30 @@ export interface XpByType {
   count: number;
 }
 
+export interface XpDayPoint {
+  date: string; // YYYY-MM-DD
+  xp: number;
+}
+
+export interface XpSummary {
+  total: number;
+  week: number;
+  month: number;
+  level: number;
+  xpIntoLevel: number;
+  xpForLevel: number;
+  xpToNext: number;
+}
+
+export type XpRange = "week" | "month" | "3m" | "6m" | "1y" | "all";
+
 export interface XpResponse {
+  range?: XpRange;
   total: number;
   byType: XpByType[];
+  series?: XpDayPoint[];
   recent: XpLogEntry[];
+  summary?: XpSummary;
 }
 
 // Re-export so client modules can import urgency unions from one place.

@@ -89,8 +89,10 @@ export const tasks = sqliteTable("tasks", {
 export const budgetCategories = sqliteTable("budget_categories", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
-  // Monthly budget in cents.
+  // Monthly budget in cents. For a "saving" category this is the monthly goal.
   monthlyBudget: integer("monthly_budget").notNull().default(0),
+  // "spend" = normal spending category | "saving" = savings/investment goal.
+  kind: text("kind").notNull().default("spend"),
   // Tabler icon name, e.g. "shopping-cart".
   icon: text("icon"),
   sortOrder: integer("sort_order").notNull().default(0),
@@ -112,6 +114,8 @@ export const budgetEntries = sqliteTable("budget_entries", {
   entryDate: text("entry_date").notNull(),
   // "YYYY-MM" for fast month filtering.
   yearMonth: text("year_month").notNull(),
+  // "spend" (default) counts toward spending; "saving" is money added to savings.
+  entryType: text("entry_type").notNull().default("spend"),
   note: text("note"),
   createdAt: createdAt(),
 });
@@ -130,6 +134,10 @@ export const people = sqliteTable("people", {
   notes: text("notes"),
   // Optional ISO date — also creates an important_dates row.
   birthday: text("birthday"),
+  // Relationship context (free text).
+  whenMet: text("when_met"),
+  howMet: text("how_met"),
+  sharedInterests: text("shared_interests"),
   isActive: integer("is_active").notNull().default(1),
   createdAt: createdAt(),
 });
@@ -160,6 +168,9 @@ export const chores = sqliteTable("chores", {
   // ISO date string (YYYY-MM-DD).
   nextDueDate: text("next_due_date").notNull(),
   notes: text("notes"),
+  // 1 = recurring (advance next_due_date on completion); 0 = one-off (archive
+  // on completion instead of advancing).
+  isRepeating: integer("is_repeating").notNull().default(1),
   isActive: integer("is_active").notNull().default(1),
   createdAt: createdAt(),
 });

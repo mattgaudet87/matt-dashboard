@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useDashboard } from "../providers";
-import type { PeopleResponse, PersonListItem, RelationshipUrgency } from "@/lib/types";
+import type {
+  ContactLogRow,
+  ContactLogsResponse,
+  PeopleResponse,
+  PersonListItem,
+  RelationshipUrgency,
+} from "@/lib/types";
 
 const RELATIONSHIP_TYPES = ["family", "friend", "partner", "mentor", "other"] as const;
 
@@ -179,6 +185,31 @@ function PersonCard({
   onArchive: () => void;
   onLogged: () => void;
 }) {
+  const [showHistory, setShowHistory] = useState(false);
+  const [editing, setEditing] = useState(false);
+  // Bumped to force the history list to reload after a log is added/edited/deleted.
+  const [historyKey, setHistoryKey] = useState(0);
+
+  function handleLogged() {
+    setHistoryKey((k) => k + 1);
+    onLogged();
+  }
+
+  if (editing) {
+    return (
+      <li className="rounded-xl bg-white p-1">
+        <PersonDetailForm
+          person={person}
+          onSaved={() => {
+            setEditing(false);
+            onLogged();
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      </li>
+    );
+  }
+
   return (
     <li className="rounded-xl bg-white p-3">
       <div className="flex items-start gap-3">
@@ -196,9 +227,16 @@ function PersonCard({
           </p>
         </div>
         <button
+          onClick={() => setEditing(true)}
+          disabled={pending}
+          className="shrink-0 px-2 py-2 text-xs font-medium text-accent disabled:opacity-60"
+        >
+          Edit / Details
+        </button>
+        <button
           onClick={onArchive}
           disabled={pending}
-          className="shrink-0 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
+          className="shrink-0 px-1 py-2 text-xs font-medium text-slate-400 active:text-slate-600 disabled:opacity-60"
         >
           Archive
         </button>
@@ -208,9 +246,32 @@ function PersonCard({
         <p className="mt-2 text-xs text-slate-500">{person.notes}</p>
       )}
 
+      {(person.whenMet || person.howMet || person.sharedInterests) && (
+        <dl className="mt-2 space-y-1 border-t border-slate-100 pt-2 text-xs">
+          {person.whenMet && (
+            <div className="flex gap-2">
+              <dt className="shrink-0 font-medium text-slate-400">When met</dt>
+              <dd className="text-slate-600">{person.whenMet}</dd>
+            </div>
+          )}
+          {person.howMet && (
+            <div className="flex gap-2">
+              <dt className="shrink-0 font-medium text-slate-400">How met</dt>
+              <dd className="text-slate-600">{person.howMet}</dd>
+            </div>
+          )}
+          {person.sharedInterests && (
+            <div className="flex gap-2">
+              <dt className="shrink-0 font-medium text-slate-400">Shared</dt>
+              <dd className="text-slate-600">{person.sharedInterests}</dd>
+            </div>
+          )}
+        </dl>
+      )}
+
       <div className="mt-3">
         {logging ? (
-          <LogContactForm personId={person.id} onLogged={onLogged} onCancel={onToggleLog} />
+          <LogContactForm personId={person.id} onLogged={handleLogged} onCancel={onToggleLog} />
         ) : (
           <button
             onClick={onToggleLog}
@@ -220,6 +281,212 @@ function PersonCard({
           </button>
         )}
       </div>
+
+      <button
+        onClick={() => setShowHistory((s) => !s)}
+        className="mt-2 flex min-h-[44px] w-full items-center justify-center text-xs font-medium text-slate-400 active:text-slate-600"
+      >
+        {showHistory ? "Hide history ▲" : "Contact history ▼"}
+      </button>
+
+      {showHistory && (
+        <ContactHistory
+          personId={person.id}
+          refreshKey={historyKey}
+          onChanged={handleLogged}
+        />
+      )}
+    </li>
+  );
+}
+
+// --- contact history (edit / delete) --------------------------------------
+
+function ContactHistory({
+  personId,
+  refreshKey,
+  onChanged,
+}: {
+  personId: number;
+  refreshKey: number;
+  onChanged: () => void;
+}) {
+  const [logs, setLogs] = useState<ContactLogRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/people/${personId}/contact`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Failed to load (${res.status})`);
+      setLogs(((await res.json()) as ContactLogsResponse).logs);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn’t load history");
+    }
+  }, [personId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load, refreshKey]);
+
+  if (error) {
+    return (
+      <div className="mt-2 rounded-lg bg-slate-50 p-3 text-center">
+        <p className="text-xs text-red-600">{error}</p>
+        <button onClick={load} className="mt-2 text-xs font-medium text-accent">
+          Try again
+        </button>
+      </div>
+    );
+  }
+  if (logs === null) {
+    return <p className="mt-2 py-3 text-center text-xs text-slate-400">Loading history…</p>;
+  }
+  if (logs.length === 0) {
+    return (
+      <p className="mt-2 rounded-lg bg-slate-50 py-4 text-center text-xs text-slate-400">
+        No contacts logged yet.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="mt-2 space-y-2">
+      {logs.map((log) => (
+        <ContactLogItem
+          key={log.id}
+          personId={personId}
+          log={log}
+          onChanged={() => {
+            load();
+            onChanged();
+          }}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function ContactLogItem({
+  personId,
+  log,
+  onChanged,
+}: {
+  personId: number;
+  log: ContactLogRow;
+  onChanged: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [date, setDate] = useState(log.contactDate);
+  const [note, setNote] = useState(log.note ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/people/${personId}/contact/${log.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactDate: date, note: note.trim() || null }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Couldn’t save");
+      }
+      setEditing(false);
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn’t save");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!confirm("Delete this contact log? This removes 15 XP.")) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/people/${personId}/contact/${log.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Couldn’t delete");
+      }
+      onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn’t delete");
+      setBusy(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <li>
+        <form onSubmit={save} className="space-y-2 rounded-lg bg-slate-50 p-3">
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={date}
+              max={todayIso()}
+              onChange={(e) => setDate(e.target.value)}
+              className="rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-accent"
+            />
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Note (optional)"
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+          </div>
+          {err && <p className="text-xs text-red-600">{err}</p>}
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={busy}
+              className="flex-1 rounded-lg bg-accent py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {busy ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-500"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-slate-600">{log.contactDate}</p>
+        {log.note && <p className="truncate text-xs text-slate-500">{log.note}</p>}
+        {err && <p className="text-xs text-red-600">{err}</p>}
+      </div>
+      <button
+        onClick={() => setEditing(true)}
+        disabled={busy}
+        className="shrink-0 px-2 py-2 text-xs font-medium text-accent disabled:opacity-60"
+      >
+        Edit
+      </button>
+      <button
+        onClick={remove}
+        disabled={busy}
+        className="shrink-0 px-2 py-2 text-xs font-medium text-red-500 disabled:opacity-60"
+      >
+        Delete
+      </button>
     </li>
   );
 }
@@ -293,6 +560,188 @@ function LogContactForm({
           type="button"
           onClick={onCancel}
           className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-500"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// --- relationship detail form ----------------------------------------------
+
+function PersonDetailForm({
+  person,
+  onSaved,
+  onCancel,
+}: {
+  person: PersonListItem;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(person.name);
+  const [relationshipType, setRelationshipType] = useState<
+    (typeof RELATIONSHIP_TYPES)[number]
+  >((person.relationshipType as (typeof RELATIONSHIP_TYPES)[number]) ?? "friend");
+  const [frequency, setFrequency] = useState<number>(person.checkinFrequencyDays);
+  const [birthday, setBirthday] = useState(person.birthday ?? "");
+  const [notes, setNotes] = useState(person.notes ?? "");
+  const [whenMet, setWhenMet] = useState(person.whenMet ?? "");
+  const [howMet, setHowMet] = useState(person.howMet ?? "");
+  const [sharedInterests, setSharedInterests] = useState(person.sharedInterests ?? "");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) {
+      setErr("Name is required");
+      return;
+    }
+    setSaving(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/people/${person.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          relationshipType,
+          checkinFrequencyDays: frequency,
+          birthday: birthday || null,
+          notes: notes.trim() || null,
+          whenMet: whenMet.trim() || null,
+          howMet: howMet.trim() || null,
+          sharedInterests: sharedInterests.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Couldn’t save");
+      }
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn’t save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-3 rounded-xl bg-white p-4">
+      <p className="text-sm font-semibold text-slate-700">Relationship details</p>
+
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-500">Name</span>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        />
+      </label>
+
+      <div>
+        <p className="mb-1 text-xs font-medium text-slate-500">Relationship</p>
+        <div className="flex flex-wrap gap-2">
+          {RELATIONSHIP_TYPES.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setRelationshipType(r)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${
+                relationshipType === r ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-1 text-xs font-medium text-slate-500">Check in</p>
+        <div className="flex flex-wrap gap-2">
+          {FREQUENCIES.map((f) => (
+            <button
+              key={f.days}
+              type="button"
+              onClick={() => setFrequency(f.days)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                frequency === f.days ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-500">Birthday</span>
+        <input
+          type="date"
+          value={birthday}
+          onChange={(e) => setBirthday(e.target.value)}
+          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        />
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-500">Notes</span>
+        <input
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Notes"
+          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        />
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-500">When met</span>
+        <input
+          value={whenMet}
+          onChange={(e) => setWhenMet(e.target.value)}
+          placeholder="e.g. Summer 2019 at a Wolf Creative event"
+          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        />
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-500">How met</span>
+        <input
+          value={howMet}
+          onChange={(e) => setHowMet(e.target.value)}
+          placeholder="e.g. Mutual friend introduced us"
+          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        />
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-500">
+          Shared interests
+        </span>
+        <input
+          value={sharedInterests}
+          onChange={(e) => setSharedInterests(e.target.value)}
+          placeholder="e.g. Hockey, content creation, travel"
+          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        />
+      </label>
+
+      {err && <p className="text-xs text-red-600">{err}</p>}
+
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving || !name.trim()}
+          className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save details"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-500"
         >
           Cancel
         </button>

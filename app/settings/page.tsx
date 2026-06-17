@@ -17,6 +17,7 @@ const ACTION_META: Record<string, { label: string; icon: string }> = {
   contact: { label: "Relationship", icon: "💬" },
   chore: { label: "Chore", icon: "🧹" },
   workout: { label: "Workout", icon: "🏋️" },
+  saving: { label: "Savings", icon: "💰" },
 };
 
 function actionMeta(type: string) {
@@ -195,12 +196,18 @@ function CategoryRow({
       <div className={archived ? "opacity-50" : undefined}>
         <p className="font-medium">
           {category.name}
+          {category.kind === "saving" && (
+            <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
+              Savings
+            </span>
+          )}
           {archived && (
             <span className="ml-2 text-[11px] font-normal text-slate-400">archived</span>
           )}
         </p>
         <p className="text-xs text-slate-400">
-          {formatMoney(category.monthlyBudget)} / month
+          {formatMoney(category.monthlyBudget)}
+          {category.kind === "saving" ? " goal / month" : " / month"}
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -236,6 +243,7 @@ function CategoryForm({
   const [amount, setAmount] = useState(
     category ? String(category.monthlyBudget / 100) : "",
   );
+  const [kind, setKind] = useState<"spend" | "saving">(category?.kind ?? "spend");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -260,7 +268,7 @@ function CategoryForm({
         {
           method: category ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: trimmed, monthlyBudget }),
+          body: JSON.stringify({ name: trimmed, monthlyBudget, kind }),
         },
       );
       if (!res.ok) {
@@ -287,9 +295,35 @@ function CategoryForm({
           autoFocus
         />
       </label>
+      <div>
+        <p className="mb-1 text-xs font-medium text-slate-500">Type</p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setKind("spend")}
+            aria-pressed={kind === "spend"}
+            className={`min-h-[44px] flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
+              kind === "spend" ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            Spending
+          </button>
+          <button
+            type="button"
+            onClick={() => setKind("saving")}
+            aria-pressed={kind === "saving"}
+            className={`min-h-[44px] flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
+              kind === "saving" ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            Savings
+          </button>
+        </div>
+      </div>
+
       <label className="block">
         <span className="mb-1 block text-xs font-medium text-slate-500">
-          Monthly budget ($)
+          {kind === "saving" ? "Monthly savings goal ($)" : "Monthly budget ($)"}
         </span>
         <input
           type="number"
@@ -337,7 +371,6 @@ function ManageLinksSection() {
       </h2>
       <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white">
         <ManageLink href="/habits" label="Habits" hint="Add, edit, archive habits" />
-        <ManageLink href="/people" label="People" hint="Relationships & check-ins" />
         <ManageLink href="/chores" label="Chores" hint="Recurring chores" />
         <ManageLink href="/dates" label="Important dates" hint="Birthdays & reminders" />
       </ul>

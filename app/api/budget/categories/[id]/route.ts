@@ -11,6 +11,7 @@ const patchSchema = z
     name: z.string().trim().min(1).max(120).optional(),
     // INTEGER cents.
     monthlyBudget: z.number().int().min(0).optional(),
+    kind: z.enum(["spend", "saving"]).optional(),
     icon: z.string().trim().max(60).nullish(),
     sortOrder: z.number().int().min(0).optional(),
     isActive: z.union([z.literal(0), z.literal(1)]).optional(),
@@ -35,9 +36,10 @@ export async function PATCH(
   if (!category) return jsonError("Budget category not found", 404);
 
   const updates: Partial<typeof budgetCategories.$inferInsert> = {};
-  const { name, monthlyBudget, icon, sortOrder, isActive } = parsed.data;
+  const { name, monthlyBudget, kind, icon, sortOrder, isActive } = parsed.data;
   if (name !== undefined) updates.name = name;
   if (monthlyBudget !== undefined) updates.monthlyBudget = monthlyBudget;
+  if (kind !== undefined) updates.kind = kind;
   if (icon !== undefined) updates.icon = icon ?? null;
   if (sortOrder !== undefined) updates.sortOrder = sortOrder;
   if (isActive !== undefined) updates.isActive = isActive;

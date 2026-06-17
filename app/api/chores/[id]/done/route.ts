@@ -39,14 +39,20 @@ export async function PATCH(
   const [chore] = await db.select().from(chores).where(eq(chores.id, choreId));
   if (!chore) return jsonError("Chore not found", 404);
 
-  const nextDueDate = format(
-    addDays(parseISO(completedDate), chore.frequencyDays),
-    "yyyy-MM-dd",
-  );
+  // Repeating chores advance the due date; one-off chores are archived instead.
+  const setValues =
+    chore.isRepeating === 0
+      ? { isActive: 0 as const }
+      : {
+          nextDueDate: format(
+            addDays(parseISO(completedDate), chore.frequencyDays),
+            "yyyy-MM-dd",
+          ),
+        };
 
   const [updated] = await db
     .update(chores)
-    .set({ nextDueDate })
+    .set(setValues)
     .where(eq(chores.id, choreId))
     .returning();
 

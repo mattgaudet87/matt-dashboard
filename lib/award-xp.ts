@@ -2,11 +2,17 @@
 // mutate users.current_xp / level / streak directly. It updates the user row,
 // recomputes level, advances the global streak, and appends to xp_log.
 import { format, subDays } from "date-fns";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "./db";
 import { users, xpLog } from "./schema";
 
-export type XpActionType = "habit" | "task" | "contact" | "chore" | "workout";
+export type XpActionType =
+  | "habit"
+  | "task"
+  | "contact"
+  | "chore"
+  | "workout"
+  | "saving";
 
 // Canonical XP values per action (BUILD_PLAN §2.9).
 export const XP_VALUES: Record<XpActionType, number> = {
@@ -15,6 +21,7 @@ export const XP_VALUES: Record<XpActionType, number> = {
   contact: 15,
   chore: 8,
   workout: 12,
+  saving: 20,
 };
 
 // XP cost to advance FROM `level` to the next level.
@@ -106,4 +113,38 @@ export async function awardXp(
   });
 
   return { currentXp, level, leveledUp, streakCount };
+}
+
+// Reverse a previously-awarded action (e.g. un-checking a habit logged today).
+// Deducts the XP, recomputes level, and removes the matching xp_log row so the
+// ledger and the XP history stay accurate — as if the action never happened.
+// The streak is intentionally left untouched: a single undo should not retro-
+// actively break a streak that other actions may also be sustaining.
+export async function reverseXp(
+  actionType: XpActionType,
+  xpAmount: number,
+  referenceId?: number,
+): Promise<AwardXpResult> {
+  const [user] = await db.select().from(users).where(eq(users.id, 1));
+  if (!user) {
+    throw new Error("User row (id = 1) not found — run `npm run db:seed`.");
+  }
+
+  const currentXp = Math.max(0, user.currentXp - xpAmount);
+  const level = computeLevel(currentXp);
+
+  await db.update(users).set({ currentXp, level }).where(eq(users.id, 1));
+
+  if (referenceId !== undefined) {
+    await db
+      .delete(xpLog)
+      .where(
+        and(
+          eq(xpLog.actionType, actionType),
+          eq(xpLog.referenceId, referenceId),
+        ),
+      );
+  }
+
+  return { currentXp, level, leveledUp: false, streakCount: user.streakCount };
 }

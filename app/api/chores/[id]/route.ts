@@ -10,6 +10,11 @@ const patchSchema = z
   .object({
     name: z.string().trim().min(1).max(120).optional(),
     frequencyDays: z.number().int().positive().optional(),
+    nextDueDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD")
+      .optional(),
+    isRepeating: z.union([z.literal(0), z.literal(1)]).optional(),
     notes: z.string().max(1000).nullish(),
     isActive: z.union([z.literal(0), z.literal(1)]).optional(),
   })
@@ -30,9 +35,11 @@ export async function PATCH(
   if (!chore) return jsonError("Chore not found", 404);
 
   const updates: Partial<typeof chores.$inferInsert> = {};
-  const { name, frequencyDays, notes, isActive } = parsed.data;
+  const { name, frequencyDays, nextDueDate, isRepeating, notes, isActive } = parsed.data;
   if (name !== undefined) updates.name = name;
   if (frequencyDays !== undefined) updates.frequencyDays = frequencyDays;
+  if (nextDueDate !== undefined) updates.nextDueDate = nextDueDate;
+  if (isRepeating !== undefined) updates.isRepeating = isRepeating;
   if (notes !== undefined) updates.notes = notes;
   if (isActive !== undefined) updates.isActive = isActive;
 

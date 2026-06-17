@@ -11,6 +11,7 @@ const createCategorySchema = z.object({
   name: z.string().trim().min(1).max(120),
   // Monthly budget in INTEGER cents (clients send dollars × 100).
   monthlyBudget: z.number().int().min(0).default(0),
+  kind: z.enum(["spend", "saving"]).default("spend"),
   icon: z.string().trim().max(60).nullish(),
 });
 
@@ -26,7 +27,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const parsed = await parseBody(req, createCategorySchema);
   if (!parsed.ok) return parsed.response;
-  const { name, monthlyBudget, icon } = parsed.data;
+  const { name, monthlyBudget, kind, icon } = parsed.data;
 
   // Append to the end of the sort order.
   const [{ max }] = await db
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
 
   const [category] = await db
     .insert(budgetCategories)
-    .values({ name, monthlyBudget, icon: icon ?? null, sortOrder: max + 1 })
+    .values({ name, monthlyBudget, kind, icon: icon ?? null, sortOrder: max + 1 })
     .returning();
 
   return jsonOk({ category }, 201);
