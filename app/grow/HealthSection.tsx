@@ -129,7 +129,13 @@ export default function HealthSection() {
         ) : (
           <Card padded={false} className="divide-y divide-line">
             {data.recent.map((w) => (
-              <WorkoutRow key={w.id} workout={w} />
+              <WorkoutRow
+                key={w.id}
+                workout={w}
+                onChanged={async () => {
+                  await Promise.all([load(), refreshDashboard()]);
+                }}
+              />
             ))}
           </Card>
         )}
@@ -169,7 +175,131 @@ function WeekChart({ weeks }: { weeks: HealthResponse["weeks"] }) {
 
 // --- recent workout row ----------------------------------------------------
 
-function WorkoutRow({ workout }: { workout: WorkoutLogItem }) {
+function WorkoutRow({
+  workout,
+  onChanged,
+}: {
+  workout: WorkoutLogItem;
+  onChanged: () => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [type, setType] = useState<(typeof WORKOUT_TYPES)[number]>(
+    (workout.type as (typeof WORKOUT_TYPES)[number]) ?? "other",
+  );
+  const [duration, setDuration] = useState(
+    workout.durationMinutes ? String(workout.durationMinutes) : "",
+  );
+  const [date, setDate] = useState(workout.workoutDate);
+  const [notes, setNotes] = useState(workout.notes ?? "");
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/health/workout/${workout.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workoutDate: date,
+          type,
+          durationMinutes: duration.trim() ? Number(duration) : null,
+          notes: notes.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Couldn’t save workout");
+      }
+      setEditing(false);
+      await onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn’t save workout");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!confirm("Delete this workout? This removes 12 XP.")) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/health/workout/${workout.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Couldn’t delete workout");
+      }
+      await onChanged();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn’t delete workout");
+      setBusy(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <form onSubmit={save} className="space-y-3 px-4 py-3">
+        <div className="flex flex-wrap gap-2">
+          {WORKOUT_TYPES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setType(t)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize ${
+                type === t ? "bg-accent text-white" : "bg-surface-2 text-muted"
+              }`}
+            >
+              {TYPE_EMOJI[t]} {t}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            placeholder="Duration (min)"
+            className={inputCls}
+          />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={inputCls}
+          />
+        </div>
+        <input
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Notes (optional)"
+          className={inputCls}
+        />
+        {err && <p className="text-xs text-coral">{err}</p>}
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={busy}
+            className="flex-1 rounded-lg bg-accent py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {busy ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="rounded-lg bg-surface-2 px-4 py-2 text-sm font-medium text-muted"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    );
+  }
+
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <span className="text-lg">{TYPE_EMOJI[workout.type] ?? "💪"}</span>
@@ -179,8 +309,23 @@ function WorkoutRow({ workout }: { workout: WorkoutLogItem }) {
           {workout.durationMinutes ? ` · ${workout.durationMinutes} min` : ""}
         </p>
         {workout.notes && <p className="truncate text-xs text-muted">{workout.notes}</p>}
+        {err && <p className="text-xs text-coral">{err}</p>}
       </div>
       <span className="shrink-0 text-xs text-dim">{workout.workoutDate}</span>
+      <button
+        onClick={() => setEditing(true)}
+        disabled={busy}
+        className="shrink-0 px-2 py-2 text-xs font-medium text-accent disabled:opacity-60"
+      >
+        Edit
+      </button>
+      <button
+        onClick={remove}
+        disabled={busy}
+        className="shrink-0 px-1 py-2 text-xs font-medium text-coral disabled:opacity-60"
+      >
+        Delete
+      </button>
     </div>
   );
 }
