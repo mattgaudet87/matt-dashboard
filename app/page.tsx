@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useDashboard } from "./providers";
+import DotGrid from "./components/DotGrid";
 import { formatMoney, relativeDays } from "@/lib/format";
 import type {
-  HabitDotStatus,
   TodayChore,
   TodayDate,
   TodayHabit,
@@ -189,14 +189,6 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <p className="px-3 py-4 text-center text-sm text-slate-400">{children}</p>;
 }
 
-const DOT_CLASS: Record<HabitDotStatus, string> = {
-  completed: "bg-accent",
-  today: "border-2 border-accent bg-white",
-  missed: "bg-slate-300",
-  empty: "bg-slate-100",
-  future: "bg-slate-100",
-};
-
 function HabitRow({
   habit,
   pending,
@@ -225,14 +217,8 @@ function HabitRow({
         <p className={`truncate text-sm font-medium ${done ? "text-slate-400 line-through" : ""}`}>
           {habit.name}
         </p>
-        <div className="mt-1 flex gap-1">
-          {habit.week.map((d) => (
-            <span
-              key={d.date}
-              title={`${d.date}: ${d.status}`}
-              className={`h-2.5 w-2.5 rounded-full ${DOT_CLASS[d.status]}`}
-            />
-          ))}
+        <div className="mt-1">
+          <DotGrid week={habit.week} />
         </div>
       </div>
     </li>

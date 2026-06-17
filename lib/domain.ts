@@ -1,11 +1,15 @@
 // Shared domain logic used by both /api/today and the dedicated routes so the
 // urgency, recurrence, and scoring rules stay in exactly one place.
 import {
+  addDays,
   addYears,
   differenceInCalendarDays,
   format,
+  getDay,
   isBefore,
   parseISO,
+  startOfWeek,
+  subDays,
 } from "date-fns";
 
 // Today as an ISO date string (YYYY-MM-DD), local time.
@@ -97,4 +101,54 @@ export function isHabitExpectedOn(
   }
   // default: daily
   return true;
+}
+
+// The seven ISO dates (Mon→Sun) of the calendar week containing `reference`.
+// Used for the habit dot grids on both Today and the Habits page.
+export function weekDates(reference: Date = new Date()): string[] {
+  const start = startOfWeek(reference, { weekStartsOn: 1 }); // Monday
+  return Array.from({ length: 7 }, (_, i) =>
+    format(addDays(start, i), "yyyy-MM-dd"),
+  );
+}
+
+// Status of a single day cell in a habit dot grid.
+// future → after today | completed → logged | today → today, not yet logged |
+// missed → past expected day with no log | empty → past day it wasn't expected.
+export function habitCellStatus(
+  date: string,
+  today: string,
+  completed: boolean,
+  expected: boolean,
+): "completed" | "today" | "missed" | "empty" | "future" {
+  if (date > today) return "future";
+  if (completed) return "completed";
+  if (date === today) return "today";
+  return expected ? "missed" : "empty";
+}
+
+// Current per-habit streak: consecutive *expected* days (walking back from today)
+// that were completed. Today counts only if logged; an unlogged today does not
+// break the streak (it's still pending). Capped to avoid runaway loops.
+export function habitStreak(
+  frequencyType: string,
+  frequencyDays: string | null,
+  completedDates: Set<string>,
+  today: string = todayIso(),
+): number {
+  let streak = 0;
+  let cursor = parseISO(today);
+  for (let i = 0; i < 400; i++) {
+    const iso = format(cursor, "yyyy-MM-dd");
+    if (isHabitExpectedOn(frequencyType, frequencyDays, getDay(cursor))) {
+      if (completedDates.has(iso)) {
+        streak += 1;
+      } else if (iso !== today) {
+        break; // a past expected day with no log ends the streak
+      }
+      // unlogged today: pending, neither counts nor breaks
+    }
+    cursor = subDays(cursor, 1);
+  }
+  return streak;
 }
