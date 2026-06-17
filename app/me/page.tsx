@@ -66,6 +66,7 @@ export default function MePage() {
   const summary = data?.summary;
   const series = data?.series ?? [];
   const byType = data?.byType ?? [];
+  const recent = data?.recent ?? [];
   const name = dash?.greeting.name ?? "Matt";
   const level = summary?.level ?? dash?.user?.level ?? 1;
   const into = summary?.xpIntoLevel ?? dash?.user?.progress?.xpIntoLevel ?? 0;
@@ -197,8 +198,49 @@ export default function MePage() {
           </Card>
         )}
       </section>
+
+      {/* Recent XP ledger */}
+      <section>
+        <SectionHeader title="Recent XP" />
+        {recent.length === 0 ? (
+          <Card>
+            <p className="text-center text-sm text-muted">No XP earned in this range yet.</p>
+          </Card>
+        ) : (
+          <Card padded={false} className="divide-y divide-line">
+            {recent.map((entry) => {
+              const meta = actionMeta(entry.actionType);
+              return (
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between px-4 py-3 text-sm"
+                >
+                  <span className="text-ink">
+                    <span aria-hidden className="mr-1.5">
+                      {meta.icon}
+                    </span>
+                    {meta.label}
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <span className="text-xs text-dim">{formatLedgerDate(entry.createdAt)}</span>
+                    <span className="font-semibold text-accent">+{entry.xpAwarded}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </Card>
+        )}
+      </section>
     </div>
   );
+}
+
+// xp_log.createdAt is "YYYY-MM-DD HH:MM:SS" (SQLite CURRENT_TIMESTAMP, UTC).
+function formatLedgerDate(raw: string): string {
+  const iso = raw.includes("T") ? raw : raw.replace(" ", "T") + "Z";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return raw.slice(0, 10);
+  return d.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
 }
 
 // --- SVG level ring (r=44, gradient stroke) --------------------------------
