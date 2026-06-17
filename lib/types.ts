@@ -128,5 +128,109 @@ export interface HealthResponse {
   recent: WorkoutLogItem[];
 }
 
+// --- People page (/api/people) --------------------------------------------
+export interface PersonListItem {
+  id: number;
+  name: string;
+  relationshipType: string;
+  checkinFrequencyDays: number;
+  notes: string | null;
+  birthday: string | null;
+  isActive: number;
+  createdAt: string;
+  lastContactDate: string | null;
+  daysSinceContact: number | null;
+  urgency: RelationshipUrgency;
+}
+
+export interface PeopleResponse {
+  people: PersonListItem[];
+}
+
+// --- Money page (/api/budget) ---------------------------------------------
+export interface BudgetCategoryRow {
+  id: number;
+  name: string;
+  monthlyBudget: number; // cents
+  icon: string | null;
+  sortOrder: number;
+  isActive: number;
+  createdAt: string;
+  spent: number; // cents
+  remaining: number; // cents
+  overBudget: boolean;
+}
+
+export interface BudgetEntryRow {
+  id: number;
+  categoryId: number;
+  amount: number; // cents
+  entryDate: string;
+  yearMonth: string;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface BudgetResponse {
+  month: string; // YYYY-MM
+  categories: BudgetCategoryRow[];
+  entries: BudgetEntryRow[];
+  totals: { budget: number; spent: number; remaining: number };
+}
+
+// --- Tasks page (/api/tasks) ----------------------------------------------
+export interface TaskRow {
+  id: number;
+  title: string;
+  category: string;
+  priority: "normal" | "high";
+  dueDate: string | null;
+  notes: string | null;
+  status: string;
+  completedAt: string | null;
+  xpAwarded: number;
+  createdAt: string;
+}
+
+export interface TasksResponse {
+  tasks: TaskRow[];
+}
+
+// --- Chores page (/api/chores) --------------------------------------------
+export interface ChoreRow {
+  id: number;
+  name: string;
+  frequencyDays: number;
+  nextDueDate: string;
+  notes: string | null;
+  isActive: number;
+  createdAt: string;
+  dueToday: boolean;
+  overdue: boolean;
+}
+
+export interface ChoresResponse {
+  chores: ChoreRow[];
+}
+
+// --- Dates page (/api/dates) ----------------------------------------------
+export interface DateRow {
+  id: number;
+  title: string;
+  eventDate: string;
+  type: string;
+  isRecurring: number;
+  reminderOffsetDays: number;
+  personId: number | null;
+  isActive: number;
+  createdAt: string;
+  daysUntil: number;
+  urgency: DateUrgency;
+}
+
+export interface DatesResponse {
+  dates: DateRow[];
+}
+
 // Re-export so client modules can import urgency unions from one place.
 export type { RelationshipUrgency, DateUrgency };

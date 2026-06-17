@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useDashboard } from "./providers";
 import DotGrid from "./components/DotGrid";
 import { formatMoney, relativeDays } from "@/lib/format";
@@ -106,7 +107,7 @@ export default function TodayPage() {
       </Section>
 
       {/* Tasks */}
-      <Section title="Today’s Tasks">
+      <Section title="Today’s Tasks" href="/tasks">
         {tasks.length === 0 ? (
           <Empty>Nothing due today. 🎉</Empty>
         ) : (
@@ -119,7 +120,7 @@ export default function TodayPage() {
       </Section>
 
       {/* Chores */}
-      <Section title="Chores Due">
+      <Section title="Chores Due" href="/chores">
         {chores.length === 0 ? (
           <Empty>No chores due today. 🎉</Empty>
         ) : (
@@ -137,7 +138,7 @@ export default function TodayPage() {
       </Section>
 
       {/* Upcoming dates */}
-      <Section title="Upcoming Dates">
+      <Section title="Upcoming Dates" href="/dates">
         {upcomingDates.length === 0 ? (
           <Empty>No dates coming up.</Empty>
         ) : (
@@ -176,10 +177,25 @@ function StatCard({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  href,
+  children,
+}: {
+  title: string;
+  href?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section>
-      <h2 className="mb-2 px-1 text-sm font-semibold text-slate-500">{title}</h2>
+      <div className="mb-2 flex items-center justify-between px-1">
+        <h2 className="text-sm font-semibold text-slate-500">{title}</h2>
+        {href && (
+          <Link href={href} className="text-xs font-medium text-accent">
+            View all →
+          </Link>
+        )}
+      </div>
       <div className="rounded-xl bg-white p-1">{children}</div>
     </section>
   );
