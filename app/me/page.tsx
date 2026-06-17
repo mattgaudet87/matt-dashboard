@@ -127,8 +127,8 @@ export default function MePage() {
               No XP earned in this range yet.
             </p>
           ) : (
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="w-full">
+              <ResponsiveContainer width="100%" height={224} minWidth={0}>
                 <LineChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
                   <defs>
                     <linearGradient id="xpStroke" x1="0" y1="0" x2="1" y2="0">
