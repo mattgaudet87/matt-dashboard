@@ -56,12 +56,12 @@ export default function MoneyPage() {
   const isCurrent = month === currentMonth();
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-slate-400">Loading budget…</p>;
+    return <p className="py-12 text-center text-dim">Loading budget…</p>;
   }
   if (error && !data) {
     return (
       <div className="py-12 text-center">
-        <p className="text-slate-500">Couldn’t load your budget.</p>
+        <p className="text-muted">Couldn’t load your budget.</p>
         <button
           onClick={() => load(month)}
           className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
@@ -78,9 +78,9 @@ export default function MoneyPage() {
   const savingCategories = data.categories.filter((c) => c.kind === "saving");
 
   return (
-    <div className="space-y-5">
+    <div className="animate-screen space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Finances</h1>
+        <h1 className="text-[22px] font-bold">Finances</h1>
         <button
           onClick={() => setShowForm((s) => !s)}
           disabled={spendCategories.length === 0}
@@ -91,11 +91,11 @@ export default function MoneyPage() {
       </div>
 
       {/* Month navigation */}
-      <div className="flex items-center justify-between rounded-xl bg-white px-2 py-2">
+      <div className="flex items-center justify-between rounded-[18px] border border-line bg-surface px-2 py-2">
         <button
           onClick={() => setMonth((m) => shiftMonth(m, -1))}
           aria-label="Previous month"
-          className="flex h-11 w-11 items-center justify-center rounded-lg text-lg text-slate-500 active:bg-slate-100"
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-lg text-muted active:bg-surface-2"
         >
           ‹
         </button>
@@ -104,7 +104,7 @@ export default function MoneyPage() {
           onClick={() => setMonth((m) => shiftMonth(m, 1))}
           disabled={isCurrent}
           aria-label="Next month"
-          className="flex h-11 w-11 items-center justify-center rounded-lg text-lg text-slate-500 active:bg-slate-100 disabled:opacity-30"
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-lg text-muted active:bg-surface-2 disabled:opacity-30"
         >
           ›
         </button>
@@ -122,14 +122,14 @@ export default function MoneyPage() {
       )}
 
       {/* Totals */}
-      <div className="rounded-xl bg-white p-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <div className="rounded-[18px] border border-line bg-surface p-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-dim">
           Remaining this month
         </p>
-        <p className={`mt-1 text-3xl font-bold ${overBudget ? "text-red-600" : "text-accent"}`}>
+        <p className={`mt-1 text-3xl font-bold ${overBudget ? "text-coral" : "text-accent"}`}>
           {formatMoney(data.totals.remaining)}
         </p>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-dim">
           {formatMoney(data.totals.spent)} spent of {formatMoney(data.totals.budget)}
         </p>
       </div>
@@ -137,7 +137,7 @@ export default function MoneyPage() {
       {/* Savings */}
       {savingCategories.length > 0 && (
         <section>
-          <h2 className="mb-2 px-1 text-sm font-semibold text-slate-500">Savings</h2>
+          <h2 className="mb-2 px-1 text-sm font-semibold text-muted">Savings</h2>
           <ul className="space-y-3">
             {savingCategories.map((c) => (
               <SavingsRow
@@ -153,16 +153,16 @@ export default function MoneyPage() {
 
       {/* Spending categories */}
       {data.categories.length === 0 ? (
-        <p className="rounded-xl bg-white px-3 py-8 text-center text-sm text-slate-400">
+        <p className="rounded-[18px] border border-line bg-surface px-3 py-8 text-center text-sm text-dim">
           No budget categories yet. Add them in Settings.
         </p>
       ) : (
         <section>
           {savingCategories.length > 0 && (
-            <h2 className="mb-2 px-1 text-sm font-semibold text-slate-500">Spending</h2>
+            <h2 className="mb-2 px-1 text-sm font-semibold text-muted">Spending</h2>
           )}
           {spendCategories.length === 0 ? (
-            <p className="rounded-xl bg-white px-3 py-6 text-center text-sm text-slate-400">
+            <p className="rounded-[18px] border border-line bg-surface px-3 py-6 text-center text-sm text-dim">
               No spending categories yet.
             </p>
           ) : (
@@ -197,32 +197,37 @@ function SavingsRow({
   const pct = goal > 0 ? Math.min(100, Math.round((saved / goal) * 100)) : saved > 0 ? 100 : 0;
 
   return (
-    <li className="rounded-xl bg-white p-3">
+    <li className="rounded-[18px] border border-line bg-surface p-3">
       <div className="flex items-baseline justify-between">
         <p className="font-medium">
           {category.name}
-          <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
+          <span className="ml-2 rounded bg-emerald/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald">
             Savings
           </span>
         </p>
-        <p className={`text-sm font-semibold ${met ? "text-emerald-600" : "text-amber-600"}`}>
+        <p className={`text-sm font-semibold ${met ? "text-emerald" : "text-gold"}`}>
           {formatMoney(saved)}
-          <span className="font-normal text-slate-400"> / {formatMoney(goal)} goal</span>
+          <span className="font-normal text-dim"> / {formatMoney(goal)} goal</span>
         </p>
       </div>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-2">
         <div
-          className={`h-full rounded-full ${met ? "bg-emerald-500" : "bg-amber-500"}`}
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full"
+          style={{
+            width: `${pct}%`,
+            background: met
+              ? "linear-gradient(90deg,#2dd4a0,#5bead4)"
+              : "linear-gradient(90deg,#f5c842,#ffa940)",
+          }}
         />
       </div>
       <div className="mt-1 flex items-center justify-between">
-        <p className={`text-xs ${met ? "text-emerald-600" : "text-amber-600"}`}>
+        <p className={`text-xs ${met ? "text-emerald" : "text-gold"}`}>
           {met ? "Goal met! 🎉" : `${formatMoney(remaining)} to goal`}
         </p>
         <button
           onClick={() => setAdding((a) => !a)}
-          className="rounded-lg bg-emerald-600/10 px-3 py-2 text-xs font-semibold text-emerald-700 active:bg-emerald-600/20"
+          className="rounded-lg bg-emerald/15 px-3 py-2 text-xs font-semibold text-emerald active:bg-emerald/20"
         >
           {adding ? "Cancel" : "+ Add · +20 XP"}
         </button>
@@ -291,7 +296,7 @@ function AddSavingForm({
   }
 
   return (
-    <form onSubmit={submit} className="mt-3 space-y-2 rounded-lg bg-slate-50 p-3">
+    <form onSubmit={submit} className="mt-3 space-y-2 rounded-lg bg-surface-2 p-3">
       <div className="flex gap-2">
         <input
           type="number"
@@ -301,27 +306,27 @@ function AddSavingForm({
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0.00"
-          className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-accent"
+          className="min-w-0 flex-1 rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2 text-sm outline-none focus:border-accent"
           autoFocus
         />
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-accent"
+          className="rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-2 py-2 text-sm outline-none focus:border-accent"
         />
       </div>
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="Note (optional)"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-accent"
+        className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2 text-sm outline-none focus:border-accent"
       />
-      {err && <p className="text-xs text-red-600">{err}</p>}
+      {err && <p className="text-xs text-coral">{err}</p>}
       <button
         type="submit"
         disabled={saving}
-        className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="w-full rounded-lg bg-emerald py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         {saving ? "Saving…" : "Add to savings"}
       </button>
@@ -340,21 +345,24 @@ function CategoryRow({ category }: { category: BudgetCategoryRow }) {
         : 0;
   const over = category.overBudget;
   return (
-    <li className="rounded-xl bg-white p-3">
+    <li className="rounded-[18px] border border-line bg-surface p-3">
       <div className="flex items-baseline justify-between">
         <p className="font-medium">{category.name}</p>
-        <p className={`text-sm font-semibold ${over ? "text-red-600" : "text-slate-600"}`}>
+        <p className={`text-sm font-semibold ${over ? "text-coral" : "text-muted"}`}>
           {formatMoney(category.spent)}
-          <span className="font-normal text-slate-400"> / {formatMoney(category.monthlyBudget)}</span>
+          <span className="font-normal text-dim"> / {formatMoney(category.monthlyBudget)}</span>
         </p>
       </div>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-2">
         <div
-          className={`h-full rounded-full ${over ? "bg-red-500" : "bg-accent"}`}
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full"
+          style={{
+            width: `${pct}%`,
+            background: over ? "#ff5254" : "linear-gradient(90deg,#2dd4a0,#5bead4)",
+          }}
         />
       </div>
-      <p className={`mt-1 text-xs ${over ? "text-red-600" : "text-slate-400"}`}>
+      <p className={`mt-1 text-xs ${over ? "text-coral" : "text-dim"}`}>
         {over
           ? `${formatMoney(-category.remaining)} over budget`
           : `${formatMoney(category.remaining)} left`}
@@ -417,9 +425,9 @@ function LogSpendForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl bg-white p-4">
+    <form onSubmit={submit} className="space-y-3 rounded-[18px] border border-line bg-surface p-4">
       <div>
-        <p className="mb-1 text-xs font-medium text-slate-500">Category</p>
+        <p className="mb-1 text-xs font-medium text-muted">Category</p>
         <div className="flex flex-wrap gap-2">
           {categories.map((c) => (
             <button
@@ -427,7 +435,7 @@ function LogSpendForm({
               type="button"
               onClick={() => setCategoryId(c.id)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                categoryId === c.id ? "bg-accent text-white" : "bg-slate-100 text-slate-600"
+                categoryId === c.id ? "bg-accent text-white" : "bg-surface-2 text-muted"
               }`}
             >
               {c.name}
@@ -438,7 +446,7 @@ function LogSpendForm({
 
       <div className="flex gap-3">
         <label className="flex-1">
-          <span className="mb-1 block text-xs font-medium text-slate-500">Amount ($)</span>
+          <span className="mb-1 block text-xs font-medium text-muted">Amount ($)</span>
           <input
             type="number"
             inputMode="decimal"
@@ -447,17 +455,17 @@ function LogSpendForm({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+            className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
             autoFocus
           />
         </label>
         <label className="flex-1">
-          <span className="mb-1 block text-xs font-medium text-slate-500">Date</span>
+          <span className="mb-1 block text-xs font-medium text-muted">Date</span>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+            className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
           />
         </label>
       </div>
@@ -466,10 +474,10 @@ function LogSpendForm({
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="Note (optional)"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-accent"
+        className="w-full rounded-lg border border-line bg-surface-2 text-ink placeholder:text-dim px-3 py-2.5 text-sm outline-none focus:border-accent"
       />
 
-      {err && <p className="text-xs text-red-600">{err}</p>}
+      {err && <p className="text-xs text-coral">{err}</p>}
 
       <button
         type="submit"
