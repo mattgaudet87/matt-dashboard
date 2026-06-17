@@ -78,16 +78,34 @@ boring stuff (workouts, check-ins, chores) turns into a game you can win each da
 
 ## Deploying to Vercel
 
-1. Push this repo to GitHub and **Import Project** in Vercel. Next.js is
-   auto-detected; `vercel.json` pins the framework and build command.
-2. In **Project → Settings → Environment Variables**, add the same two vars to
-   the Production (and Preview) environments:
-   - `TURSO_DATABASE_URL`
-   - `TURSO_AUTH_TOKEN`
-3. Deploy. The schema/seed steps run against Turso directly (see above) — they
-   are **not** part of the Vercel build, so push + seed before the first deploy.
-4. On your phone, open the deployment URL and **Add to Home Screen** for an
-   app-like, full-width experience.
+This project ships via the **Vercel CLI** (deploying straight from the local
+folder), not via Vercel's GitHub integration. Env vars are already set in the
+Vercel project's Production environment.
+
+To deploy a new version:
+
+```bash
+npx vercel --prod --yes
+```
+
+First-time / new-machine setup:
+
+1. `npx vercel login`, then `npx vercel link` to connect the local folder to the
+   Vercel project. `vercel.json` pins the framework and build command.
+2. Add the two env vars to the project (one-time):
+
+   ```bash
+   npx vercel env add TURSO_DATABASE_URL production
+   npx vercel env add TURSO_AUTH_TOKEN production
+   ```
+3. `npx vercel --prod --yes` to build and deploy.
+
+Notes:
+- The schema/seed steps run against Turso directly (see above) — they are **not**
+  part of the Vercel build, so push + seed before the first deploy.
+- Pushing to GitHub does **not** trigger a deploy; run the CLI command above.
+- On your phone, open the deployment URL and **Add to Home Screen** for an
+  app-like, full-width experience.
 
 ## Conventions (see `CLAUDE.md` for the full list)
 

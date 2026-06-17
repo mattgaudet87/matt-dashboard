@@ -16,6 +16,7 @@ import {
   computeHealthScore,
   dateUrgency,
   daysUntil,
+  effectiveStreak,
   isHabitExpectedOn,
   relationshipUrgency,
   todayIso,
@@ -44,6 +45,8 @@ export async function GET() {
   // --- user / gamification ---
   const [user] = await db.select().from(users).where(eq(users.id, 1));
   const progress = user ? levelProgress(user.currentXp) : null;
+  // Display streak: stored count while alive, 0 once it has lapsed (see domain).
+  const streak = user ? effectiveStreak(user.streakCount, user.streakLastDate, today) : 0;
 
   // --- pull the data sets we need (mostly small, single-user) ---
   const [
@@ -179,7 +182,7 @@ export async function GET() {
   const healthScore = computeHealthScore({
     workoutsThisWeek: weekWorkouts.length,
     healthHabitCompletionsThisWeek: healthHabitCompletions,
-    streakActive: (user?.streakCount ?? 0) >= 7,
+    streakActive: streak >= 7,
   });
 
   // --- time-of-day greeting ---
@@ -193,7 +196,7 @@ export async function GET() {
       ? {
           currentXp: user.currentXp,
           level: user.level,
-          streakCount: user.streakCount,
+          streakCount: streak,
           progress,
         }
       : null,

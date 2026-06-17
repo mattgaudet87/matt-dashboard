@@ -67,6 +67,24 @@ export function daysUntil(
   return differenceInCalendarDays(parseISO(eventDate), parseISO(referenceIso));
 }
 
+// --- global streak --------------------------------------------------------
+// The stored streak_count only resets lazily, on the next XP award. Between
+// actions it can be stale: if the last action was older than yesterday the
+// streak has actually lapsed. This returns the streak as it should be *shown*
+// — the stored count while still alive (acted today or yesterday), else 0.
+export function effectiveStreak(
+  streakCount: number,
+  streakLastDate: string | null,
+  referenceIso: string = todayIso(),
+): number {
+  if (!streakLastDate) return 0;
+  const yesterday = format(subDays(parseISO(referenceIso), 1), "yyyy-MM-dd");
+  if (streakLastDate === referenceIso || streakLastDate === yesterday) {
+    return streakCount;
+  }
+  return 0;
+}
+
 // --- health score ---------------------------------------------------------
 // Weekly 0–100: workouts ≤3 worth 20 each (max 60), health-habit completions
 // worth 5 each (max 30), +10 if a 7-day streak is active.
