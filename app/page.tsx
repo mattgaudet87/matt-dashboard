@@ -1,65 +1,305 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useDashboard } from "./providers";
+import { formatMoney, relativeDays } from "@/lib/format";
+import type {
+  HabitDotStatus,
+  TodayChore,
+  TodayDate,
+  TodayHabit,
+  TodayTask,
+} from "@/lib/types";
+
+export default function TodayPage() {
+  const { data, loading, error, refresh } = useDashboard();
+  const [pending, setPending] = useState<Set<string>>(new Set());
+
+  function setPendingKey(key: string, on: boolean) {
+    setPending((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }
+
+  async function act(key: string, url: string, method: string) {
+    setPendingKey(key, true);
+    try {
+      const res = await fetch(url, { method });
+      // 409 (already logged) is a no-op success for our purposes.
+      if (res.ok || res.status === 409) await refresh();
+    } finally {
+      setPendingKey(key, false);
+    }
+  }
+
+  if (loading && !data) {
+    return <p className="py-12 text-center text-slate-400">Loading your day…</p>;
+  }
+  if (error && !data) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-slate-500">Couldn’t load your dashboard.</p>
+        <button
+          onClick={refresh}
+          className="mt-3 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+  if (!data) return null;
+
+  const { greeting, stats, habits, tasks, chores, upcomingDates } = data;
+  const overBudget = stats.budget.remaining < 0;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold">
+          Good {greeting.timeOfDay}, {greeting.name.split(" ")[0]}.
+        </h1>
+        <p className="text-sm text-slate-500">Here’s your day at a glance.</p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard label="Health Score" value={`${stats.healthScore}`} sub="of 100 this week" />
+        <StatCard
+          label="Budget Left"
+          value={formatMoney(stats.budget.remaining)}
+          sub="this month"
+          tone={overBudget ? "red" : "default"}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        <StatCard
+          label="Tasks Done"
+          value={`${stats.tasks.done} / ${stats.tasks.total}`}
+          sub="today"
+        />
+        <StatCard
+          label="Check-Ins Due"
+          value={`${stats.relationshipsOverdue}`}
+          sub="people overdue"
+          tone={stats.relationshipsOverdue > 0 ? "red" : "default"}
+        />
+      </div>
+
+      {/* Habits */}
+      <Section title="Habits">
+        {habits.length === 0 ? (
+          <Empty>No habits yet. Add some on the Habits tab.</Empty>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {habits.map((h) => (
+              <HabitRow
+                key={h.id}
+                habit={h}
+                pending={pending.has(`habit:${h.id}`)}
+                onComplete={() => act(`habit:${h.id}`, `/api/habits/${h.id}/log`, "POST")}
+              />
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      {/* Tasks */}
+      <Section title="Today’s Tasks">
+        {tasks.length === 0 ? (
+          <Empty>Nothing due today. 🎉</Empty>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {tasks.map((t) => (
+              <TaskRow key={t.id} task={t} today={data.today} />
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      {/* Chores */}
+      <Section title="Chores Due">
+        {chores.length === 0 ? (
+          <Empty>No chores due today. 🎉</Empty>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {chores.map((c) => (
+              <ChoreRow
+                key={c.id}
+                chore={c}
+                pending={pending.has(`chore:${c.id}`)}
+                onComplete={() => act(`chore:${c.id}`, `/api/chores/${c.id}/done`, "PATCH")}
+              />
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      {/* Upcoming dates */}
+      <Section title="Upcoming Dates">
+        {upcomingDates.length === 0 ? (
+          <Empty>No dates coming up.</Empty>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {upcomingDates.map((d) => (
+              <DateRow key={d.id} date={d} />
+            ))}
+          </ul>
+        )}
+      </Section>
     </div>
+  );
+}
+
+// --- presentational pieces -------------------------------------------------
+
+function StatCard({
+  label,
+  value,
+  sub,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  tone?: "default" | "red";
+}) {
+  return (
+    <div className="rounded-xl bg-white p-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className={`mt-1 text-xl font-bold ${tone === "red" ? "text-red-600" : "text-slate-900"}`}>
+        {value}
+      </p>
+      <p className="text-xs text-slate-400">{sub}</p>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h2 className="mb-2 px-1 text-sm font-semibold text-slate-500">{title}</h2>
+      <div className="rounded-xl bg-white p-1">{children}</div>
+    </section>
+  );
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <p className="px-3 py-4 text-center text-sm text-slate-400">{children}</p>;
+}
+
+const DOT_CLASS: Record<HabitDotStatus, string> = {
+  completed: "bg-accent",
+  today: "border-2 border-accent bg-white",
+  missed: "bg-slate-300",
+  empty: "bg-slate-100",
+  future: "bg-slate-100",
+};
+
+function HabitRow({
+  habit,
+  pending,
+  onComplete,
+}: {
+  habit: TodayHabit;
+  pending: boolean;
+  onComplete: () => void;
+}) {
+  const done = habit.completedToday;
+  return (
+    <li className="flex items-center gap-3 px-2 py-2">
+      <button
+        onClick={onComplete}
+        disabled={done || pending}
+        aria-label={done ? `${habit.name} completed` : `Complete ${habit.name}`}
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-lg ${
+          done
+            ? "border-accent bg-accent text-white"
+            : "border-slate-300 text-transparent active:bg-slate-50"
+        } disabled:opacity-60`}
+      >
+        ✓
+      </button>
+      <div className="min-w-0 flex-1">
+        <p className={`truncate text-sm font-medium ${done ? "text-slate-400 line-through" : ""}`}>
+          {habit.name}
+        </p>
+        <div className="mt-1 flex gap-1">
+          {habit.week.map((d) => (
+            <span
+              key={d.date}
+              title={`${d.date}: ${d.status}`}
+              className={`h-2.5 w-2.5 rounded-full ${DOT_CLASS[d.status]}`}
+            />
+          ))}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function TaskRow({ task, today }: { task: TodayTask; today: string }) {
+  const overdue = task.dueDate !== null && task.dueDate < today;
+  return (
+    <li className="flex items-center gap-2 px-3 py-2.5">
+      {task.priority === "high" && (
+        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+          High
+        </span>
+      )}
+      <span className="flex-1 truncate text-sm">{task.title}</span>
+      {task.dueDate && (
+        <span className={`text-xs ${overdue ? "text-red-600" : "text-slate-400"}`}>
+          {overdue ? "overdue" : "due today"}
+        </span>
+      )}
+    </li>
+  );
+}
+
+function ChoreRow({
+  chore,
+  pending,
+  onComplete,
+}: {
+  chore: TodayChore;
+  pending: boolean;
+  onComplete: () => void;
+}) {
+  return (
+    <li className="flex items-center gap-3 px-2 py-2">
+      <button
+        onClick={onComplete}
+        disabled={pending}
+        aria-label={`Mark ${chore.name} done`}
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 text-lg text-transparent active:bg-slate-50 disabled:opacity-60"
+      >
+        ✓
+      </button>
+      <span className="flex-1 truncate text-sm font-medium">{chore.name}</span>
+      {chore.overdue && (
+        <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-red-700">
+          Overdue
+        </span>
+      )}
+    </li>
+  );
+}
+
+const DATE_TONE: Record<TodayDate["urgency"], string> = {
+  urgent: "text-red-600",
+  soon: "text-amber-600",
+  normal: "text-slate-400",
+};
+
+function DateRow({ date }: { date: TodayDate }) {
+  return (
+    <li className="flex items-center gap-2 px-3 py-2.5">
+      <span className="flex-1 truncate text-sm">{date.title}</span>
+      <span className={`text-xs font-medium ${DATE_TONE[date.urgency]}`}>
+        {relativeDays(date.daysUntil)}
+      </span>
+    </li>
   );
 }
