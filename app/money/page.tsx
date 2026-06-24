@@ -53,7 +53,7 @@ export default function MoneyPage() {
   const isCurrent = month === currentMonth();
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-dim">Loading budget…</p>;
+    return <p className="py-12 text-center text-muted">Loading budget…</p>;
   }
   if (error && !data) {
     return (

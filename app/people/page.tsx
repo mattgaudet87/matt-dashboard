@@ -87,7 +87,7 @@ export default function PeoplePage() {
   }
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-dim">Loading people…</p>;
+    return <p className="py-12 text-center text-muted">Loading people…</p>;
   }
   if (error && !data) {
     return (

@@ -74,7 +74,7 @@ export default function DatesPage() {
   }
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-dim">Loading dates…</p>;
+    return <p className="py-12 text-center text-muted">Loading dates…</p>;
   }
   if (error && !data) {
     return (

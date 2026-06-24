@@ -69,7 +69,7 @@ export default function TasksPage() {
   }
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-dim">Loading tasks…</p>;
+    return <p className="py-12 text-center text-muted">Loading tasks…</p>;
   }
   if (error && !data) {
     return (

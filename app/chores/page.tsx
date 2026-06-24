@@ -90,7 +90,7 @@ export default function ChoresPage() {
   }
 
   if (loading && !data) {
-    return <p className="py-12 text-center text-dim">Loading chores…</p>;
+    return <p className="py-12 text-center text-muted">Loading chores…</p>;
   }
   if (error && !data) {
     return (
