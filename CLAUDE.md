@@ -27,8 +27,9 @@ users, habits, habit_logs, tasks, budget_categories, budget_entries,
 people, contact_logs, chores, chore_logs, important_dates, workout_logs, xp_log
 
 ## XP values
-habit: 10 | task: 5 | relationship contact: 15 | chore: 8 | workout: 12
+habit: 10 | task: 5 | relationship contact: 15 | chore: 8 | workout: 12 | saving: 20
 award-xp.ts updates current_xp, recomputes level, updates streak, writes xp_log
+Undo/delete reverses XP via reverseXp (habits, tasks, chores, contacts, workouts, savings)
 
 ## Streak logic (in award-xp.ts)
 streak_last_date on users row (ISO date string)
@@ -43,6 +44,8 @@ Levels 1–5: 500 XP each | Levels 6–10: 1000 XP each | Levels 11+: 2000 XP ea
 ## Money — store in cents
 budget_categories.monthly_budget and budget_entries.amount: INTEGER cents, /100 for display
 budget_entries.year_month = "YYYY-MM" string for fast month filtering
+Category kind: "spend" (counts toward budget) or "saving" (monthly_budget = goal).
+Saving entries award +20 XP and are excluded from spending totals; spends earn no XP.
 
 ## Chore due date logic
 next_due_date = completion_date + frequency_days (always from completion, not original due date)
@@ -51,6 +54,7 @@ next_due_date = completion_date + frequency_days (always from completion, not or
 - overdue: days_since_contact > checkin_frequency_days
 - soon: days_since_contact > (checkin_frequency_days * 0.7)
 - good: otherwise
+- new: no contact ever logged (not counted as overdue)
 
 ## Important dates — recurring
 If is_recurring=1 and event_date < today: advance year by 1. Run in GET /api/dates.
