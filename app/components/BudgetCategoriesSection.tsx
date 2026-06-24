@@ -1,12 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Card } from "./ui";
+import { Badge, Card, inputCls } from "./ui";
 import { formatMoney } from "@/lib/format";
 import type { BudgetCategoriesResponse, BudgetCategory } from "@/lib/types";
-
-const inputCls =
-  "w-full rounded-lg border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink outline-none placeholder:text-dim focus:border-accent";
 
 export default function BudgetCategoriesSection() {
   const [categories, setCategories] = useState<BudgetCategory[] | null>(null);

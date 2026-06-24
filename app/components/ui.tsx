@@ -1,6 +1,10 @@
 // Shared dark-theme UI primitives for the redesign. Reused across all screens.
 import Link from "next/link";
 
+// Canonical text/number input styling used by every form on the dashboard.
+export const inputCls =
+  "w-full rounded-lg border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink outline-none placeholder:text-dim focus:border-accent";
+
 // ── Card ──────────────────────────────────────────────────────────
 export function Card({
   children,

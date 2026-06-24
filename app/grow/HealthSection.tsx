@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useDashboard } from "../providers";
-import { Card, SectionHeader, StatCard } from "../components/ui";
+import { Card, SectionHeader, StatCard, inputCls } from "../components/ui";
 import type { HealthResponse, WorkoutLogItem } from "@/lib/types";
 
 const WORKOUT_TYPES = ["run", "lift", "bike", "swim", "other"] as const;
@@ -14,9 +14,6 @@ const TYPE_EMOJI: Record<string, string> = {
   swim: "🏊",
   other: "💪",
 };
-
-const inputCls =
-  "w-full rounded-lg border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink outline-none placeholder:text-dim focus:border-accent";
 
 export default function HealthSection() {
   const { refresh: refreshDashboard } = useDashboard();

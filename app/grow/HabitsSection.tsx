@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import DotGrid from "../components/DotGrid";
-import { Card, CategoryTag, HabitCircle, categoryColor } from "../components/ui";
+import { Card, CategoryTag, HabitCircle, categoryColor, inputCls } from "../components/ui";
 import { useDashboard } from "../providers";
 import type { HabitListItem, HabitsResponse } from "@/lib/types";
 
@@ -22,9 +22,6 @@ const CUSTOM_DAYS = [
   { num: 6, label: "S" },
   { num: 0, label: "S" },
 ];
-
-const inputCls =
-  "w-full rounded-lg border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink outline-none placeholder:text-dim focus:border-accent";
 
 export default function HabitsSection() {
   const { refresh: refreshDashboard } = useDashboard();
