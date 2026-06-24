@@ -6,7 +6,7 @@ import { z } from "zod";
 import { jsonOk, parseBody } from "@/lib/api";
 import { awardXp, XP_VALUES } from "@/lib/award-xp";
 import { db } from "@/lib/db";
-import { computeHealthScore, todayIso } from "@/lib/domain";
+import { computeHealthScore, effectiveStreak, todayIso } from "@/lib/domain";
 import { habitLogs, habits, users, workoutLogs } from "@/lib/schema";
 
 export async function GET() {
@@ -50,10 +50,13 @@ export async function GET() {
     activeHabits.filter((h) => h.category === "health").map((h) => h.id),
   );
   const healthHabitCompletions = weekHabitLogs.filter((l) => healthHabitIds.has(l.habitId)).length;
+  // Use the lapse-aware streak (matches /api/today) so both screens show the
+  // same Health Score — the raw stored streakCount can be stale.
+  const streak = effectiveStreak(user?.streakCount ?? 0, user?.streakLastDate ?? null, today);
   const healthScore = computeHealthScore({
     workoutsThisWeek: thisWeek.workouts,
     healthHabitCompletionsThisWeek: healthHabitCompletions,
-    streakActive: (user?.streakCount ?? 0) >= 7,
+    streakActive: streak >= 7,
   });
 
   return jsonOk({
