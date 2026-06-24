@@ -8,6 +8,11 @@ import { db } from "@/lib/db";
 import { advanceRecurringDate, dateUrgency, daysUntil, todayIso } from "@/lib/domain";
 import { importantDates } from "@/lib/schema";
 
+// This GET intentionally writes: with no scheduler, it is the only place that
+// rolls recurring dates forward a year and retires past one-offs. Force dynamic
+// so the mutation is never served from a cache.
+export const dynamic = "force-dynamic";
+
 const createDateSchema = z.object({
   title: z.string().trim().min(1).max(160),
   eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD"),
