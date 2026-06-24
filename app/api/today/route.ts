@@ -86,7 +86,6 @@ export async function GET() {
   );
 
   const habitLogSet = new Set(weekHabitLogs.map((l) => `${l.habitId}:${l.loggedDate}`));
-  const habitById = new Map(activeHabits.map((h) => [h.id, h]));
 
   const habitsToday = activeHabits.map((h) => {
     const week = fullWeek.map((date) => {
@@ -118,7 +117,6 @@ export async function GET() {
   const doneToday = allTasks.filter(
     (t) => t.status === "done" && t.completedAt?.slice(0, 10) === today,
   ).length;
-  const openDueToday = openTasks.filter((t) => t.dueDate === today).length;
 
   // --- chores due today or overdue ---
   const choresDue = activeChores
@@ -179,8 +177,8 @@ export async function GET() {
   const healthHabitIds = new Set(
     activeHabits.filter((h) => h.category === "health").map((h) => h.id),
   );
-  const healthHabitCompletions = weekHabitLogs.filter(
-    (l) => healthHabitIds.has(l.habitId) || habitById.get(l.habitId)?.category === "health",
+  const healthHabitCompletions = weekHabitLogs.filter((l) =>
+    healthHabitIds.has(l.habitId),
   ).length;
   const healthScore = computeHealthScore({
     workoutsThisWeek: weekWorkouts.length,
@@ -206,7 +204,9 @@ export async function GET() {
     stats: {
       healthScore,
       budget: { spent: totalSpent, budget: totalBudget, remaining: totalBudget - totalSpent },
-      tasks: { done: doneToday, total: doneToday + openDueToday },
+      // "done / total" reflects the same set surfaced in Today's Tasks: those
+      // completed today plus the open ones still showing (due/overdue/high).
+      tasks: { done: doneToday, total: doneToday + todaysTasks.length },
       relationshipsOverdue: overdueCount,
     },
     habits: habitsToday,
