@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useDashboard } from "../providers";
+import { todayIso } from "@/lib/format";
 import type { TaskRow, TasksResponse } from "@/lib/types";
 
 const CATEGORIES = ["personal", "health", "finance", "family", "home", "chore"] as const;
@@ -14,10 +15,6 @@ const CATEGORY_TONE: Record<string, string> = {
   personal: "bg-accent-2/15 text-accent-2",
   chore: "bg-surface-2 text-muted",
 };
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 type Filter = "open" | "done";
 

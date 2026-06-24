@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useDashboard } from "../providers";
+import { todayIso } from "@/lib/format";
 import type { ChoreRow, ChoresResponse } from "@/lib/types";
 
 const FREQUENCIES = [
@@ -16,10 +17,6 @@ function dueLabel(c: ChoreRow): string {
   if (c.overdue) return `Overdue · was due ${c.nextDueDate}`;
   if (c.dueToday) return "Due today";
   return `Next due ${c.nextDueDate}`;
-}
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export default function ChoresPage() {

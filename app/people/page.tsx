@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useDashboard } from "../providers";
+import { todayIso } from "@/lib/format";
 import type {
   ContactLogRow,
   ContactLogsResponse,
@@ -32,10 +33,6 @@ const URGENCY_LABEL: Record<RelationshipUrgency, string> = {
   soon: "Soon",
   good: "Good",
 };
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export default function PeoplePage() {
   const { refresh: refreshDashboard } = useDashboard();

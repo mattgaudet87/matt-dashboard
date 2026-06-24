@@ -3,11 +3,12 @@
 import { asc, eq } from "drizzle-orm";
 import { jsonError, jsonOk } from "@/lib/api";
 import { db } from "@/lib/db";
+import { todayIso } from "@/lib/domain";
 import { budgetCategories, budgetEntries } from "@/lib/schema";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const month = searchParams.get("month") ?? new Date().toISOString().slice(0, 7);
+  const month = searchParams.get("month") ?? todayIso().slice(0, 7); // local YYYY-MM
   if (!/^\d{4}-\d{2}$/.test(month)) {
     return jsonError("Invalid month — expected YYYY-MM", 400);
   }

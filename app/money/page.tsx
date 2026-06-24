@@ -2,15 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, todayIso } from "@/lib/format";
 import type { BudgetCategoryRow, BudgetResponse } from "@/lib/types";
 
 function currentMonth() {
-  return new Date().toISOString().slice(0, 7); // YYYY-MM
-}
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return todayIso().slice(0, 7); // YYYY-MM (local time)
 }
 
 // Shift a "YYYY-MM" string by ±n months (calendar-safe via UTC).
