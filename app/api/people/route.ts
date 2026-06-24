@@ -47,7 +47,7 @@ export async function GET() {
       : null;
     const urgency =
       daysSinceContact === null
-        ? "overdue"
+        ? "new"
         : relationshipUrgency(daysSinceContact, p.checkinFrequencyDays);
     return { ...p, lastContactDate: last, daysSinceContact, urgency };
   });

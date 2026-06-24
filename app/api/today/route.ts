@@ -150,9 +150,11 @@ export async function GET() {
     const daysSince = last
       ? differenceInCalendarDays(parseISO(today), parseISO(last))
       : null;
-    const urgency =
-      daysSince === null ? "overdue" : relationshipUrgency(daysSince, p.checkinFrequencyDays);
-    if (urgency === "overdue") overdueCount += 1;
+    // Never-contacted people are "new", not overdue — don't count them here.
+    if (daysSince === null) continue;
+    if (relationshipUrgency(daysSince, p.checkinFrequencyDays) === "overdue") {
+      overdueCount += 1;
+    }
   }
 
   // --- upcoming dates (next 3, recurring advanced for display) ---

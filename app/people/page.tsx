@@ -26,12 +26,14 @@ const URGENCY_TONE: Record<RelationshipUrgency, string> = {
   overdue: "bg-coral/15 text-coral",
   soon: "bg-gold/15 text-gold",
   good: "bg-emerald/15 text-emerald",
+  new: "bg-surface-2 text-muted",
 };
 
 const URGENCY_LABEL: Record<RelationshipUrgency, string> = {
   overdue: "Overdue",
   soon: "Soon",
   good: "Good",
+  new: "New",
 };
 
 export default function PeoplePage() {

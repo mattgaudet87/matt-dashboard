@@ -19,7 +19,8 @@ export function todayIso(): string {
 
 // --- relationships --------------------------------------------------------
 // overdue if days since last contact > frequency; soon if > frequency × 0.7.
-export type RelationshipUrgency = "overdue" | "soon" | "good";
+// "new" is assigned by callers when no contact has ever been logged.
+export type RelationshipUrgency = "overdue" | "soon" | "good" | "new";
 
 export function relationshipUrgency(
   daysSinceContact: number,
