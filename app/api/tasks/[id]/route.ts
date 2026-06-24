@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { jsonError, jsonOk, parseBody } from "@/lib/api";
-import { awardXp, XP_VALUES } from "@/lib/award-xp";
+import { awardXp, reverseXp, XP_VALUES } from "@/lib/award-xp";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/schema";
 
@@ -42,13 +42,20 @@ export async function PATCH(
   if (dueDate !== undefined) updates.dueDate = dueDate;
   if (notes !== undefined) updates.notes = notes;
 
-  // Only award XP the first time a task is completed.
+  // Award XP the first time a task is completed; reverse it if a completed task
+  // is later reopened/archived — otherwise toggling done↔open would farm XP and
+  // leave a phantom award behind.
   const completing = status === "done" && task.status !== "done";
+  const uncompleting =
+    status !== undefined && status !== "done" && task.status === "done";
   if (status !== undefined) {
     updates.status = status;
     if (completing) {
       updates.completedAt = new Date().toISOString();
       updates.xpAwarded = XP_VALUES.task;
+    } else if (uncompleting) {
+      updates.completedAt = null;
+      updates.xpAwarded = 0;
     } else if (status !== "done") {
       updates.completedAt = null;
     }
@@ -60,9 +67,13 @@ export async function PATCH(
     .where(eq(tasks.id, taskId))
     .returning();
 
-  const award = completing
-    ? await awardXp("task", XP_VALUES.task, taskId)
-    : null;
+  let award = null;
+  if (completing) {
+    award = await awardXp("task", XP_VALUES.task, taskId);
+  } else if (uncompleting) {
+    // Reverse the exact amount this task awarded (removes its xp_log row).
+    award = await reverseXp("task", task.xpAwarded, taskId);
+  }
 
   return jsonOk({ task: updated, award });
 }
