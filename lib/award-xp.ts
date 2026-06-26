@@ -1,9 +1,10 @@
 // Shared XP helper. EVERY XP award in the app goes through awardXp() — never
 // mutate users.current_xp / level / streak directly. It updates the user row,
 // recomputes level, advances the global streak, and appends to xp_log.
-import { format, subDays } from "date-fns";
+import { format, parseISO, subDays } from "date-fns";
 import { and, eq } from "drizzle-orm";
 import { db } from "./db";
+import { todayIso } from "./format";
 import { users, xpLog } from "./schema";
 
 export type XpActionType =
@@ -82,8 +83,11 @@ export async function awardXp(
     throw new Error("User row (id = 1) not found — run `npm run db:seed`.");
   }
 
-  const today = format(new Date(), "yyyy-MM-dd");
-  const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+  // Both anchored to the app's home timezone (midnight Moncton), so a late-
+  // evening completion counts for the right calendar day. yesterday is pure
+  // date arithmetic on today's ISO string, so it's TZ-independent.
+  const today = todayIso();
+  const yesterday = format(subDays(parseISO(today), 1), "yyyy-MM-dd");
 
   // --- global streak ---
   // yesterday → increment | today → unchanged | older/null → reset to 1.

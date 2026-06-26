@@ -11,11 +11,11 @@ import {
   startOfWeek,
   subDays,
 } from "date-fns";
+import { todayIso } from "./format";
 
-// Today as an ISO date string (YYYY-MM-DD), local time.
-export function todayIso(): string {
-  return format(new Date(), "yyyy-MM-dd");
-}
+// Re-exported so server modules can keep importing `todayIso` from "@/lib/domain".
+// The canonical, timezone-pinned implementation lives in lib/format.ts.
+export { todayIso };
 
 // --- relationships --------------------------------------------------------
 // overdue if days since last contact > frequency; soon if > frequency × 0.7.

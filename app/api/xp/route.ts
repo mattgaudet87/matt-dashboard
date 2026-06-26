@@ -13,6 +13,7 @@ import { desc, eq } from "drizzle-orm";
 import { jsonError, jsonOk } from "@/lib/api";
 import { levelProgress } from "@/lib/award-xp";
 import { db } from "@/lib/db";
+import { isoDateInAppTz } from "@/lib/format";
 import { users, xpLog } from "@/lib/schema";
 
 const RECENT_LIMIT = 50;
@@ -20,12 +21,12 @@ const RANGES = ["week", "month", "3m", "6m", "1y", "all"] as const;
 type Range = (typeof RANGES)[number];
 
 // xp_log.created_at is "YYYY-MM-DD HH:MM:SS" (SQLite CURRENT_TIMESTAMP, UTC).
-// Convert to the local calendar date the event happened on.
+// Convert to the calendar date the event happened on, in the app's home tz.
 function localDate(raw: string): string {
   const iso = raw.includes("T") ? raw : raw.replace(" ", "T") + "Z";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return raw.slice(0, 10);
-  return format(d, "yyyy-MM-dd");
+  return isoDateInAppTz(d);
 }
 
 function rangeStart(range: Range, now: Date): string {
